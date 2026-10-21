@@ -97,6 +97,7 @@ Off-chain watcher nodes store the original webhook URL locally and verify agains
 
 To rotate a webhook URL, two methods are available:
 - **Two-phase rotation (recommended)**: Use `propose_webhook` followed by `confirm_webhook` to safely stage and test the new endpoint before activating it without downtime. See [ADR 0001: Two-Phase Webhook Rotation](adr/0001-two-phase-webhook-rotation.md) for the security rationale and threat analysis.
+  A staged proposal expires `WEBHOOK_PROPOSAL_EXPIRY_LEDGERS` (120,960 ledgers, about 7 days) after `propose_webhook`; `confirm_webhook` then fails with `WebhookProposalExpired` (29) and the owner must re-propose or cancel.
 - **Direct rotation**: Use `update_webhook` with the new SHA-256 digest for immediate cutover.
 
 ---
@@ -111,6 +112,13 @@ The `rules` field is a `Vec<String>` containing serialized rule descriptors. Eac
 |---|---|
 | `rule:transfer` | Alert when the target contract emits a transfer-like action. |
 | `rule:mint` | Alert when the target contract performs a mint or issuance event. |
+| `rule:burn` | Alert when tokens are burned (SEP-41 `burn` / `burn_from`), reducing supply. |
+| `rule:approve` | Alert when a holder sets or changes a spending allowance (SEP-41 `approve`). |
+| `rule:clawback` | Alert when an issuer claws tokens back from a holder (SEP-41 `clawback`). |
+
+### Parameterized rules
+
+Any descriptor may carry a minimum-amount parameter: `rule:<base>:min=<amount>`, e.g. `rule:transfer:min=10000` ("transfers of at least 10,000 units"). `<amount>` must be a canonical non-negative decimal `i128` (digits only; no sign, no leading zeros except `0`; at most `i128::MAX`). Anything else, including `min=` with no value, other parameter names, or repeated parameters, is rejected with `InvalidRuleDescriptor`. Descriptors are limited to 64 bytes. The registry validates and stores the string verbatim; the off-chain watcher applies the threshold. The grammar is covered by unit tests in `rule_params.rs` and by the `validate_rule` fuzz target.
 
 The alert registry stores these descriptors verbatim and validates that each entry uses a recognized prefix before accepting it. Off-chain watcher logic still interprets prefixes and applies the corresponding alert behavior.
 
@@ -124,12 +132,12 @@ Registers a new alert configuration for a target contract address.
 
 **Requires auth:** `owner`
 
-**Validation:** Rule descriptors are checked against the known prefixes `rule:transfer` and `rule:mint`. The call returns a `ContractError` instead of registering the alert if validation fails:
+**Validation:** Rule descriptors are checked against the known prefixes `rule:transfer`, `rule:mint`, `rule:burn`, `rule:approve` and `rule:clawback`. The call returns a `ContractError` instead of registering the alert if validation fails:
 
 | Error | Code | Cause |
 |---|---|---|
-| `TooManyRules` | 8 | More than `MAX_RULES_PER_ALERT` (`VALID_RULE_DESCRIPTORS.len()`, currently 2) rules were supplied |
-| `InvalidRuleDescriptor` | 9 | A rule is not `rule:transfer` or `rule:mint` |
+| `TooManyRules` | 8 | More than `MAX_RULES_PER_ALERT` (`VALID_RULE_DESCRIPTORS.len()`, currently 5) rules were supplied |
+| `InvalidRuleDescriptor` | 9 | A rule is not one of the recognized descriptors listed above |
 | `DuplicateRule` | 15 | The same rule descriptor appears more than once |
 
 **Parameters**

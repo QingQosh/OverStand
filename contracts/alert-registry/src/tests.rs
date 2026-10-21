@@ -7657,3 +7657,148 @@ fn test_guardian_pause_blocks_mutations() {
     assert!(alert_client.is_alert_suspended(&id));
     assert!(client.get_alert(&owner, &id).is_some());
 }
+
+// ── #392: webhook rotation proposals expire ──────────────────────────────────
+
+#[test]
+fn test_confirm_webhook_expires_after_window() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    env.ledger().with_mut(|li| li.sequence_number = 100);
+    let id = client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Alert"),
+        &hash64c(&env, 'a'),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+    client.propose_webhook(&owner, &id, &hash64c(&env, 'b'));
+
+    env.ledger()
+        .with_mut(|li| li.sequence_number = 100 + WEBHOOK_PROPOSAL_EXPIRY_LEDGERS + 1);
+    assert_eq!(
+        client.try_confirm_webhook(&owner, &id).unwrap_err().unwrap(),
+        ContractError::WebhookProposalExpired
+    );
+}
+
+#[test]
+fn test_confirm_webhook_succeeds_at_window_boundary() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    env.ledger().with_mut(|li| li.sequence_number = 100);
+    let id = client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Alert"),
+        &hash64c(&env, 'a'),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+    client.propose_webhook(&owner, &id, &hash64c(&env, 'b'));
+
+    env.ledger()
+        .with_mut(|li| li.sequence_number = 100 + WEBHOOK_PROPOSAL_EXPIRY_LEDGERS);
+    client.confirm_webhook(&owner, &id);
+    assert_eq!(
+        client.get_alert(&owner, &id).unwrap().webhook_hash,
+        hash64c(&env, 'b')
+    );
+}
+
+#[test]
+fn test_reproposing_after_expiry_resets_window() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    env.ledger().with_mut(|li| li.sequence_number = 100);
+    let id = client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Alert"),
+        &hash64c(&env, 'a'),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+    client.propose_webhook(&owner, &id, &hash64c(&env, 'b'));
+    env.ledger()
+        .with_mut(|li| li.sequence_number = 100 + WEBHOOK_PROPOSAL_EXPIRY_LEDGERS + 1);
+    client.propose_webhook(&owner, &id, &hash64c(&env, 'c'));
+    client.confirm_webhook(&owner, &id);
+    assert_eq!(
+        client.get_alert(&owner, &id).unwrap().webhook_hash,
+        hash64c(&env, 'c')
+    );
+}
+
+// ── #393: rule:burn, rule:approve and rule:clawback ──────────────────────────
+
+#[test]
+fn test_validate_rule_accepts_burn_approve_clawback() {
+    let env = Env::default();
+    for d in ["rule:burn", "rule:approve", "rule:clawback"] {
+        assert_eq!(AlertRegistry::validate_rule(&env, &str(&env, d)), Ok(()));
+    }
+}
+
+#[test]
+fn test_register_alert_with_all_descriptors() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    let id = client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "All"),
+        &hash64(&env),
+        &vec![
+            &env,
+            str(&env, "rule:transfer"),
+            str(&env, "rule:mint"),
+            str(&env, "rule:burn"),
+            str(&env, "rule:approve"),
+            str(&env, "rule:clawback"),
+        ],
+    );
+    assert_eq!(client.get_alert(&owner, &id).unwrap().rules.len(), 5);
+}
+
+#[test]
+fn test_validate_rule_rejects_near_miss_descriptors() {
+    let env = Env::default();
+    for d in ["rule:Burn", "rule:burn ", "rule:freeze"] {
+        assert_eq!(
+            AlertRegistry::validate_rule(&env, &str(&env, d)),
+            Err(ContractError::InvalidRuleDescriptor)
+        );
+    }
+}
+
+// ── #394: parameterized rules ────────────────────────────────────────────────
+
+#[test]
+fn test_validate_rule_accepts_min_parameter() {
+    let env = Env::default();
+    for d in ["rule:transfer:min=10000", "rule:burn:min=0", "rule:clawback:min=1"] {
+        assert_eq!(AlertRegistry::validate_rule(&env, &str(&env, d)), Ok(()));
+    }
+}
+
+#[test]
+fn test_validate_rule_rejects_bad_min_parameter() {
+    let env = Env::default();
+    for d in [
+        "rule:transfer:min=",
+        "rule:transfer:min=-1",
+        "rule:transfer:min=007",
+        "rule:transfer:min=1e3",
+        "rule:transfer:max=5",
+        "rule:bogus:min=5",
+        "rule:transfer:min=170141183460469231731687303715884105728",
+    ] {
+        assert_eq!(
+            AlertRegistry::validate_rule(&env, &str(&env, d)),
+            Err(ContractError::InvalidRuleDescriptor)
+        );
+    }
+}

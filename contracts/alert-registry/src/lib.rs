@@ -23,6 +23,8 @@ contractmeta!(key = "Version", val = "0.2.0");
 #[cfg(test)]
 mod tests;
 
+mod rule_params;
+
 #[cfg(test)]
 mod error_codes;
 #[cfg(test)]
@@ -66,6 +68,12 @@ pub const ALERT_TRANSFER_EXPIRY_LEDGERS: u32 = 120_960;
 /// admin to accept (approximately 7 days at the nominal 5-second ledger close
 /// time). After that it can only be cancelled or replaced.
 pub const ADMIN_TRANSFER_EXPIRY_LEDGERS: u32 = 120_960;
+
+/// Number of ledgers a staged webhook rotation (`propose_webhook`) stays
+/// confirmable (approximately 7 days at the nominal 5-second ledger close
+/// time). After that `confirm_webhook` returns
+/// [`ContractError::WebhookProposalExpired`]; the owner can cancel or re-propose.
+pub const WEBHOOK_PROPOSAL_EXPIRY_LEDGERS: u32 = 120_960;
 /// Maximum number of owner-index entries processed by one bulk deactivation call.
 pub const MAX_DEACTIVATIONS_PER_CALL: u32 = 50;
 /// Maximum number of owner-index entries examined by one expired-alert prune pass.
@@ -83,7 +91,13 @@ pub const INSTANCE_BUMP_AMOUNT: u32 = 535_680;
 pub const MAX_PAGE_SIZE: u32 = 100;
 
 /// Recognized rule descriptors accepted by [`AlertRegistry::validate_rule`].
-pub const VALID_RULE_DESCRIPTORS: [&str; 2] = ["rule:transfer", "rule:mint"];
+pub const VALID_RULE_DESCRIPTORS: [&str; 5] = [
+    "rule:transfer",
+    "rule:mint",
+    "rule:burn",
+    "rule:approve",
+    "rule:clawback",
+];
 
 /// Maximum number of rule descriptors per alert, derived from [`VALID_RULE_DESCRIPTORS`].
 ///
@@ -163,6 +177,9 @@ pub enum DataKey {
     /// considered active, keyed by alert ID. A separate key rather than an
     /// [`AlertConfig`] field, so stored configs keep their encoding.
     AlertExpiry(u64),
+    /// Ledger sequence at which the alert's pending webhook rotation was
+    /// proposed; used to expire stale proposals in `confirm_webhook`.
+    WebhookProposalLedger(u64),
 }
 
 /// Keys of the entries in the contract's **instance** storage that are stored
@@ -299,6 +316,9 @@ pub enum ContractError {
     /// Returned by `pause` when called by an address that is neither the
     /// admin nor the configured guardian.
     NotAGuardian = 24,
+    /// Returned by `confirm_webhook` when the pending webhook rotation was
+    /// proposed more than [`WEBHOOK_PROPOSAL_EXPIRY_LEDGERS`] ledgers ago.
+    WebhookProposalExpired = 29,
 }
 
 // ── Data types ───────────────────────────────────────────────────────────────
@@ -1634,6 +1654,10 @@ impl AlertRegistry {
 
         // The live hash is deliberately left untouched until confirmation.
         config.pending_webhook_hash = Some(webhook_hash);
+        env.storage().persistent().set(
+            &DataKey::WebhookProposalLedger(config_id),
+            &env.ledger().sequence(),
+        );
 
         Self::persist_alert(&env, config_id, &config);
 
@@ -1655,6 +1679,8 @@ impl AlertRegistry {
     /// progress.
     /// Returns [`ContractError::AlertNotFound`] if `config_id` does not exist.
     /// Returns [`ContractError::Unauthorized`] if `caller` is not the owner.
+    /// Returns [`ContractError::WebhookProposalExpired`] if the proposal is
+    /// older than [`WEBHOOK_PROPOSAL_EXPIRY_LEDGERS`] ledgers.
     ///
     /// # Events
     /// Emits `(Symbol("alert"), Symbol("wh_conf"))` with data `(id: u64, caller: Address)`.
@@ -1674,6 +1700,21 @@ impl AlertRegistry {
             .pending_webhook_hash
             .clone()
             .ok_or(ContractError::NoPendingWebhook)?;
+
+        // Reject proposals older than the expiry window (or with no recorded
+        // proposal ledger, e.g. staged before this check existed).
+        let proposed_at: Option<u32> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::WebhookProposalLedger(config_id));
+        match proposed_at {
+            Some(l)
+                if env.ledger().sequence() <= l.saturating_add(WEBHOOK_PROPOSAL_EXPIRY_LEDGERS) => {}
+            _ => return Err(ContractError::WebhookProposalExpired),
+        }
+        env.storage()
+            .persistent()
+            .remove(&DataKey::WebhookProposalLedger(config_id));
 
         config.webhook_hash = pending;
         config.pending_webhook_hash = None;
@@ -3980,7 +4021,8 @@ impl AlertRegistry {
 impl AlertRegistry {
     /// Validates a single rule descriptor string.
     ///
-    /// Accepts the registry's recognized rule descriptors ([`VALID_RULE_DESCRIPTORS`]).
+    /// Accepts the registry's recognized rule descriptors ([`VALID_RULE_DESCRIPTORS`])
+    /// and their parameterized form `rule:<base>:min=<i128>` (see `rule_params`).
     /// Returns [`ContractError::InvalidRuleDescriptor`] on any other string.
     ///
     /// Exposed for testing, integration, and fuzz testing.
@@ -3989,6 +4031,15 @@ impl AlertRegistry {
     pub fn validate_rule(env: &Env, rule: &String) -> Result<(), ContractError> {
         for descriptor in VALID_RULE_DESCRIPTORS {
             if *rule == String::from_str(env, descriptor) {
+                return Ok(());
+            }
+        }
+        // Parameterized form `rule:<base>:min=<i128>` (#394).
+        let len = rule.len() as usize;
+        if len <= rule_params::MAX_RULE_LEN {
+            let mut buf = [0u8; rule_params::MAX_RULE_LEN];
+            rule.copy_into_slice(&mut buf[..len]);
+            if rule_params::parse_min_param(&buf[..len], &VALID_RULE_DESCRIPTORS).is_some() {
                 return Ok(());
             }
         }
