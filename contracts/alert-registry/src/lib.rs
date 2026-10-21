@@ -23,6 +23,8 @@ contractmeta!(key = "Version", val = "0.2.0");
 #[cfg(test)]
 mod tests;
 
+mod rule_params;
+
 #[cfg(test)]
 mod error_codes;
 #[cfg(test)]
@@ -4019,7 +4021,8 @@ impl AlertRegistry {
 impl AlertRegistry {
     /// Validates a single rule descriptor string.
     ///
-    /// Accepts the registry's recognized rule descriptors ([`VALID_RULE_DESCRIPTORS`]).
+    /// Accepts the registry's recognized rule descriptors ([`VALID_RULE_DESCRIPTORS`])
+    /// and their parameterized form `rule:<base>:min=<i128>` (see `rule_params`).
     /// Returns [`ContractError::InvalidRuleDescriptor`] on any other string.
     ///
     /// Exposed for testing, integration, and fuzz testing.
@@ -4028,6 +4031,15 @@ impl AlertRegistry {
     pub fn validate_rule(env: &Env, rule: &String) -> Result<(), ContractError> {
         for descriptor in VALID_RULE_DESCRIPTORS {
             if *rule == String::from_str(env, descriptor) {
+                return Ok(());
+            }
+        }
+        // Parameterized form `rule:<base>:min=<i128>` (#394).
+        let len = rule.len() as usize;
+        if len <= rule_params::MAX_RULE_LEN {
+            let mut buf = [0u8; rule_params::MAX_RULE_LEN];
+            rule.copy_into_slice(&mut buf[..len]);
+            if rule_params::parse_min_param(&buf[..len], &VALID_RULE_DESCRIPTORS).is_some() {
                 return Ok(());
             }
         }

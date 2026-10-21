@@ -7773,3 +7773,32 @@ fn test_validate_rule_rejects_near_miss_descriptors() {
         );
     }
 }
+
+// ── #394: parameterized rules ────────────────────────────────────────────────
+
+#[test]
+fn test_validate_rule_accepts_min_parameter() {
+    let env = Env::default();
+    for d in ["rule:transfer:min=10000", "rule:burn:min=0", "rule:clawback:min=1"] {
+        assert_eq!(AlertRegistry::validate_rule(&env, &str(&env, d)), Ok(()));
+    }
+}
+
+#[test]
+fn test_validate_rule_rejects_bad_min_parameter() {
+    let env = Env::default();
+    for d in [
+        "rule:transfer:min=",
+        "rule:transfer:min=-1",
+        "rule:transfer:min=007",
+        "rule:transfer:min=1e3",
+        "rule:transfer:max=5",
+        "rule:bogus:min=5",
+        "rule:transfer:min=170141183460469231731687303715884105728",
+    ] {
+        assert_eq!(
+            AlertRegistry::validate_rule(&env, &str(&env, d)),
+            Err(ContractError::InvalidRuleDescriptor)
+        );
+    }
+}
