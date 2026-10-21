@@ -304,6 +304,10 @@ argument. It is always required, but it is only checked once an admin has
 enabled watcher-gating with `set_watcher_registry`; from then on `querier`
 must be a registered watcher or the call fails with `NotAWatcher`.
 
+Every list getter (including `get_alerts_by_ids`, `get_alerts_modified_since`
+and `get_alerts_modified_since_ledger`) returns `Vec<(u64, AlertConfig)>`:
+each config is paired with its alert ID.
+
 ```bash
 # Retrieve a single alert config by ID
 stellar contract invoke \

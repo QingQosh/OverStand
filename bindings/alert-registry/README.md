@@ -46,7 +46,10 @@ const alerts = await contract.get_alerts_for_contract({
   target_contract: 'CONTRACT_ADDRESS',
 });
 
-console.log('Alerts:', alerts);
+// Each entry is an [id, config] tuple, so you can tell which config belongs to which ID
+for (const [id, config] of alerts) {
+  console.log('Alert', id, config.label);
+}
 
 // Get paginated alerts
 const paginatedAlerts = await contract.get_alerts_by_owner_paginated({
@@ -55,6 +58,7 @@ const paginatedAlerts = await contract.get_alerts_by_owner_paginated({
   limit: 10,
 });
 
+// Entries are [id, config] tuples
 console.log('Paginated alerts:', paginatedAlerts);
 
 // Get a page of active alerts for a contract (bounded read, #384)

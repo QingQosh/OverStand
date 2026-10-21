@@ -3435,7 +3435,48 @@ fn test_get_alerts_by_ids_preserves_order_and_skips_missing() {
     let configs =
         client.get_alerts_by_ids(&Address::generate(&env), &vec![&env, 999, second, first]);
     assert_eq!(configs.len(), 1);
-    assert_eq!(configs.get(0).unwrap().label, str(&env, "second"));
+    let (id, cfg) = configs.get(0).unwrap();
+    assert_eq!(id, second);
+    assert_eq!(cfg.label, str(&env, "second"));
+}
+
+#[test]
+fn test_list_getters_pair_ids_with_configs_after_gaps() {
+    let (env, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    let labels = ["a", "b", "c", "d"];
+    let mut ids: soroban_sdk::Vec<u64> = vec![&env];
+    for l in labels {
+        ids.push_back(client.register_alert(
+            &owner,
+            &target,
+            &str(&env, l),
+            &hash64(&env),
+            &vec![&env, str(&env, "rule:transfer")],
+        ));
+    }
+    // Removing 1 and 2 leaves a gap in the ID space: [0, 3] remain live.
+    client.remove_alert(&owner, &ids.get(1).unwrap());
+    client.remove_alert(&owner, &ids.get(2).unwrap());
+
+    let querier = Address::generate(&env);
+    let by_owner = client.get_alerts_by_owner_paginated(&querier, &owner, &0u32, &10u32);
+    let by_contract = client.get_contract_alerts_paginated(&querier, &target, &0u32, &10u32);
+    let by_ids = client.get_alerts_by_ids(&querier, &vec![&env, ids.get(3).unwrap(), ids.get(1).unwrap(), ids.get(0).unwrap()]);
+    for page in [by_owner, by_contract, by_ids] {
+        assert_eq!(page.len(), 2);
+        for (id, cfg) in page.iter() {
+            assert_eq!(cfg.label, str(&env, labels[id as usize]));
+            assert!(id == ids.get(0).unwrap() || id == ids.get(3).unwrap());
+        }
+    }
+
+    // The sync getter also returns removal tombstones, still paired by ID.
+    let synced = client.get_alerts_modified_since(&0u64, &0u32, &10u32);
+    for (id, cfg) in synced.iter() {
+        assert_eq!(cfg.label, str(&env, labels[id as usize]));
+    }
 }
 
 #[test]

@@ -52,6 +52,26 @@ echo "==> Network: $NETWORK"
 echo "==> Upgrading contract: $CONTRACT ($CONTRACT_ID)"
 echo "==> Identity: $IDENTITY ($ADMIN)"
 
+confirm_mainnet() {
+  if [[ "$NETWORK" != "mainnet" ]]; then
+    return 0
+  fi
+  if [ "$ASSUME_YES" = true ]; then
+    echo "==> Mainnet operation confirmed via --yes flag."
+    return 0
+  fi
+  echo "======================================================================"
+  echo "WARNING: You are about to modify a production contract on MAINNET!"
+  echo "  Contract:          $CONTRACT ($CONTRACT_ID)"
+  echo "  Current WASM Hash: $CURRENT_WASM_HASH"
+  echo "  New WASM Hash:     $NEW_WASM_HASH"
+  echo "======================================================================"
+  read -r -p "Type 'yes' or 'CONFIRM' to proceed with the mainnet operation: " CONFIRMATION
+  if [[ "$CONFIRMATION" != "yes" && "$CONFIRMATION" != "CONFIRM" ]]; then
+    echo "==> Operation cancelled by user."
+    exit 1
+  fi
+}
 # Build only the target crate with -p and --locked via common build_contract helper
 WASM="$(wasm_path "$CONTRACT")"
 build_contract "$CONTRACT"
@@ -64,46 +84,29 @@ CURRENT_WASM_HASH=$(stellar contract info \
   --network-passphrase "$NETWORK_PASSPHRASE" 2>/dev/null \
   | grep -i "wasm hash" | awk '{print $NF}' | tr -d '"' || echo "unknown")
 
-echo "==> Uploading new WASM on-chain..."
-NEW_WASM_HASH=$(stellar contract upload \
-  --wasm "$WASM" \
-  --source "$IDENTITY" \
-  --network "$NETWORK" \
-  --rpc-url "$RPC_URL" \
-  --network-passphrase "$NETWORK_PASSPHRASE")
-
-echo ""
-echo "==> Contract WASM Hash Summary:"
-echo "    Contract ID:       $CONTRACT_ID"
-echo "    Current WASM Hash: $CURRENT_WASM_HASH"
-echo "    New WASM Hash:     $NEW_WASM_HASH"
-echo ""
-
-if [[ "$NETWORK" == "mainnet" ]]; then
-  if [ "$ASSUME_YES" = true ]; then
-    echo "==> Mainnet upgrade confirmed via --yes flag."
-  else
-    echo "======================================================================"
-    echo "WARNING: You are about to upgrade a production contract on MAINNET!"
-    echo "  Contract:          $CONTRACT ($CONTRACT_ID)"
-    echo "  Current WASM Hash: $CURRENT_WASM_HASH"
-    echo "  New WASM Hash:     $NEW_WASM_HASH"
-    echo "======================================================================"
-    read -r -p "Type 'yes' or 'CONFIRM' to proceed with the mainnet upgrade: " CONFIRMATION
-    if [[ "$CONFIRMATION" != "yes" && "$CONFIRMATION" != "CONFIRM" ]]; then
-      echo "==> Upgrade cancelled by user."
-      exit 1
-    fi
-  fi
-fi
-echo "==> Contract: $CONTRACT ($CONTRACT_ID)"
-echo "==> Identity: $IDENTITY ($ADMIN)"
-
 if [ "$EXECUTE" = true ]; then
   if [ "$CONTRACT" != "watcher-registry" ]; then
     echo "Error: --execute is only applicable to watcher-registry (which supports timelocked actions)" >&2
     exit 1
   fi
+  # Execute only calls execute_admin_action: no build or upload, and the hash
+  # that runs is the one that was proposed, not whatever --wasm-hash says.
+  echo "==> Fetching pending timelocked action..."
+  PENDING_ACTION=$(stellar contract invoke \
+    --id "$CONTRACT_ID" \
+    --source "$IDENTITY" \
+    --network "$NETWORK" \
+    --rpc-url "$RPC_URL" \
+    --network-passphrase "$NETWORK_PASSPHRASE" \
+    -- get_pending_action)
+  NEW_WASM_HASH="$PENDING_ACTION"
+  echo ""
+  echo "==> Pending action to execute:"
+  echo "    Contract ID:       $CONTRACT_ID"
+  echo "    Current WASM Hash: $CURRENT_WASM_HASH"
+  echo "    Pending action:    $PENDING_ACTION"
+  echo ""
+  confirm_mainnet
   echo "==> Executing pending timelocked admin action on $CONTRACT_ID..."
   stellar contract invoke \
     --id "$CONTRACT_ID" \
@@ -117,19 +120,30 @@ if [ "$EXECUTE" = true ]; then
   exit 0
 fi
 
-# If we need to build / install WASM (for direct upgrade or propose)
+# Build and upload only when no --wasm-hash / NEW_WASM_HASH was supplied.
 if [ -z "$NEW_WASM_HASH" ]; then
+  # Build only the target crate with -p and --locked via common build_contract helper
   build_contract "$CONTRACT"
 
-  echo "==> Installing new WASM on-chain..."
-  NEW_WASM_HASH=$(stellar contract install \
+  echo "==> Uploading new WASM on-chain..."
+  NEW_WASM_HASH=$(stellar contract upload \
     --wasm "$WASM" \
     --source "$IDENTITY" \
     --network "$NETWORK" \
     --rpc-url "$RPC_URL" \
     --network-passphrase "$NETWORK_PASSPHRASE")
+else
+  echo "==> Using provided WASM hash; skipping build and upload."
 fi
-echo "New WASM hash: $NEW_WASM_HASH"
+
+echo ""
+echo "==> Contract WASM Hash Summary:"
+echo "    Contract ID:       $CONTRACT_ID"
+echo "    Current WASM Hash: $CURRENT_WASM_HASH"
+echo "    New WASM Hash:     $NEW_WASM_HASH"
+echo ""
+
+confirm_mainnet
 
 # For watcher-registry, check if timelock is enabled if --propose is not explicitly set
 if [ "$PROPOSE" = false ] && [ "$CONTRACT" = "watcher-registry" ]; then

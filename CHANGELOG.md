@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed — BREAKING (alert-registry)
 
+- **List and sync getters now return `Vec<(u64, AlertConfig)>`.** Every getter
+  that returned `Vec<AlertConfig>` (`get_alerts_modified_since`,
+  `get_alerts_modified_since_ledger`, `get_alerts_by_owner`,
+  `get_alerts_for_contract`, `get_alerts_by_ids`, their paginated and active
+  variants) pairs each config with its alert ID, so callers can tell which
+  config belongs to which ID after removals leave gaps. Bindings and README
+  examples must destructure `[id, config]`. (issue #358)
+
 - **Alert ownership transfers now require the recipient's acceptance.**
   `transfer_alert_ownership` let an owner push alerts onto any address, which a
   griefer could use to fill a victim's per-owner quota and pollute their alert
