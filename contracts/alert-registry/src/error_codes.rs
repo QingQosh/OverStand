@@ -49,5 +49,6 @@ mod tests {
         assert_eq!(ContractError::EmptyRules as u32, 25);
         assert_eq!(ContractError::AdminTransferExpired as u32, 24);
         assert_eq!(ContractError::NotAGuardian as u32, 24);
+        assert_eq!(ContractError::WebhookProposalExpired as u32, 29);
     }
 }

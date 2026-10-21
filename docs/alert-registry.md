@@ -97,6 +97,7 @@ Off-chain watcher nodes store the original webhook URL locally and verify agains
 
 To rotate a webhook URL, two methods are available:
 - **Two-phase rotation (recommended)**: Use `propose_webhook` followed by `confirm_webhook` to safely stage and test the new endpoint before activating it without downtime. See [ADR 0001: Two-Phase Webhook Rotation](adr/0001-two-phase-webhook-rotation.md) for the security rationale and threat analysis.
+  A staged proposal expires `WEBHOOK_PROPOSAL_EXPIRY_LEDGERS` (120,960 ledgers, about 7 days) after `propose_webhook`; `confirm_webhook` then fails with `WebhookProposalExpired` (29) and the owner must re-propose or cancel.
 - **Direct rotation**: Use `update_webhook` with the new SHA-256 digest for immediate cutover.
 
 ---

@@ -7657,3 +7657,76 @@ fn test_guardian_pause_blocks_mutations() {
     assert!(alert_client.is_alert_suspended(&id));
     assert!(client.get_alert(&owner, &id).is_some());
 }
+
+// ── #392: webhook rotation proposals expire ──────────────────────────────────
+
+#[test]
+fn test_confirm_webhook_expires_after_window() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    env.ledger().with_mut(|li| li.sequence_number = 100);
+    let id = client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Alert"),
+        &hash64c(&env, 'a'),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+    client.propose_webhook(&owner, &id, &hash64c(&env, 'b'));
+
+    env.ledger()
+        .with_mut(|li| li.sequence_number = 100 + WEBHOOK_PROPOSAL_EXPIRY_LEDGERS + 1);
+    assert_eq!(
+        client.try_confirm_webhook(&owner, &id).unwrap_err().unwrap(),
+        ContractError::WebhookProposalExpired
+    );
+}
+
+#[test]
+fn test_confirm_webhook_succeeds_at_window_boundary() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    env.ledger().with_mut(|li| li.sequence_number = 100);
+    let id = client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Alert"),
+        &hash64c(&env, 'a'),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+    client.propose_webhook(&owner, &id, &hash64c(&env, 'b'));
+
+    env.ledger()
+        .with_mut(|li| li.sequence_number = 100 + WEBHOOK_PROPOSAL_EXPIRY_LEDGERS);
+    client.confirm_webhook(&owner, &id);
+    assert_eq!(
+        client.get_alert(&owner, &id).unwrap().webhook_hash,
+        hash64c(&env, 'b')
+    );
+}
+
+#[test]
+fn test_reproposing_after_expiry_resets_window() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    env.ledger().with_mut(|li| li.sequence_number = 100);
+    let id = client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Alert"),
+        &hash64c(&env, 'a'),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+    client.propose_webhook(&owner, &id, &hash64c(&env, 'b'));
+    env.ledger()
+        .with_mut(|li| li.sequence_number = 100 + WEBHOOK_PROPOSAL_EXPIRY_LEDGERS + 1);
+    client.propose_webhook(&owner, &id, &hash64c(&env, 'c'));
+    client.confirm_webhook(&owner, &id);
+    assert_eq!(
+        client.get_alert(&owner, &id).unwrap().webhook_hash,
+        hash64c(&env, 'c')
+    );
+}
