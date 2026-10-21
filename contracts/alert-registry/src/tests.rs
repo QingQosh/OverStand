@@ -7730,3 +7730,46 @@ fn test_reproposing_after_expiry_resets_window() {
         hash64c(&env, 'c')
     );
 }
+
+// ── #393: rule:burn, rule:approve and rule:clawback ──────────────────────────
+
+#[test]
+fn test_validate_rule_accepts_burn_approve_clawback() {
+    let env = Env::default();
+    for d in ["rule:burn", "rule:approve", "rule:clawback"] {
+        assert_eq!(AlertRegistry::validate_rule(&env, &str(&env, d)), Ok(()));
+    }
+}
+
+#[test]
+fn test_register_alert_with_all_descriptors() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    let id = client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "All"),
+        &hash64(&env),
+        &vec![
+            &env,
+            str(&env, "rule:transfer"),
+            str(&env, "rule:mint"),
+            str(&env, "rule:burn"),
+            str(&env, "rule:approve"),
+            str(&env, "rule:clawback"),
+        ],
+    );
+    assert_eq!(client.get_alert(&owner, &id).unwrap().rules.len(), 5);
+}
+
+#[test]
+fn test_validate_rule_rejects_near_miss_descriptors() {
+    let env = Env::default();
+    for d in ["rule:Burn", "rule:burn ", "rule:freeze"] {
+        assert_eq!(
+            AlertRegistry::validate_rule(&env, &str(&env, d)),
+            Err(ContractError::InvalidRuleDescriptor)
+        );
+    }
+}

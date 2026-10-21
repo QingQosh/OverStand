@@ -112,6 +112,9 @@ The `rules` field is a `Vec<String>` containing serialized rule descriptors. Eac
 |---|---|
 | `rule:transfer` | Alert when the target contract emits a transfer-like action. |
 | `rule:mint` | Alert when the target contract performs a mint or issuance event. |
+| `rule:burn` | Alert when tokens are burned (SEP-41 `burn` / `burn_from`), reducing supply. |
+| `rule:approve` | Alert when a holder sets or changes a spending allowance (SEP-41 `approve`). |
+| `rule:clawback` | Alert when an issuer claws tokens back from a holder (SEP-41 `clawback`). |
 
 The alert registry stores these descriptors verbatim and validates that each entry uses a recognized prefix before accepting it. Off-chain watcher logic still interprets prefixes and applies the corresponding alert behavior.
 
@@ -125,12 +128,12 @@ Registers a new alert configuration for a target contract address.
 
 **Requires auth:** `owner`
 
-**Validation:** Rule descriptors are checked against the known prefixes `rule:transfer` and `rule:mint`. The call returns a `ContractError` instead of registering the alert if validation fails:
+**Validation:** Rule descriptors are checked against the known prefixes `rule:transfer`, `rule:mint`, `rule:burn`, `rule:approve` and `rule:clawback`. The call returns a `ContractError` instead of registering the alert if validation fails:
 
 | Error | Code | Cause |
 |---|---|---|
-| `TooManyRules` | 8 | More than `MAX_RULES_PER_ALERT` (`VALID_RULE_DESCRIPTORS.len()`, currently 2) rules were supplied |
-| `InvalidRuleDescriptor` | 9 | A rule is not `rule:transfer` or `rule:mint` |
+| `TooManyRules` | 8 | More than `MAX_RULES_PER_ALERT` (`VALID_RULE_DESCRIPTORS.len()`, currently 5) rules were supplied |
+| `InvalidRuleDescriptor` | 9 | A rule is not one of the recognized descriptors listed above |
 | `DuplicateRule` | 15 | The same rule descriptor appears more than once |
 
 **Parameters**

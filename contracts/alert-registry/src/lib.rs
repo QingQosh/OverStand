@@ -89,7 +89,13 @@ pub const INSTANCE_BUMP_AMOUNT: u32 = 535_680;
 pub const MAX_PAGE_SIZE: u32 = 100;
 
 /// Recognized rule descriptors accepted by [`AlertRegistry::validate_rule`].
-pub const VALID_RULE_DESCRIPTORS: [&str; 2] = ["rule:transfer", "rule:mint"];
+pub const VALID_RULE_DESCRIPTORS: [&str; 5] = [
+    "rule:transfer",
+    "rule:mint",
+    "rule:burn",
+    "rule:approve",
+    "rule:clawback",
+];
 
 /// Maximum number of rule descriptors per alert, derived from [`VALID_RULE_DESCRIPTORS`].
 ///
