@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed — npm package names
 
-- **TypeScript bindings renamed to `@tx-wats/<contract>-bindings`.** The scope now matches the GitHub org (`Tx-wats`) and both packages share the `-bindings` suffix: `@tx-wat/alert-registry-bindings` → `@tx-wats/alert-registry-bindings`, and `@tx-wat/watcher-registry` → `@tx-wats/watcher-registry-bindings`. Nothing was published under the old names.
+- **TypeScript bindings renamed to `@QingQosh/<contract>-bindings`.** The scope now matches the GitHub org (`QingQosh`) and both packages share the `-bindings` suffix: `@QingQosh/alert-registry-bindings` → `@QingQosh/alert-registry-bindings`, and `@QingQosh/watcher-registry` → `@QingQosh/watcher-registry-bindings`. Nothing was published under the old names.
 
 ### Changed — BREAKING (alert-registry)
 
@@ -329,5 +329,5 @@ The workspace did not compile and the test suite had never run. Both are now gre
 - `WatcherRegistry::decrement_watcher_count` is now correctly called on `remove_watcher`
   (previously the count only ever incremented — this was a bug fix).
 
-[Unreleased]: https://github.com/Tx-wats/OverStand/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/Tx-wats/OverStand/releases/tag/v0.1.0
+[Unreleased]: https://github.com/QingQosh/OverStand/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/QingQosh/OverStand/releases/tag/v0.1.0

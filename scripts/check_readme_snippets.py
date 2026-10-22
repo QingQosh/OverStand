@@ -38,8 +38,8 @@ CONTRACT_IDS = {
     "<WATCHER_REGISTRY_CONTRACT_ID>": "watcher-registry",
 }
 BINDINGS_PACKAGES = {
-    "@tx-wats/alert-registry-bindings": "alert-registry",
-    "@tx-wats/watcher-registry-bindings": "watcher-registry",
+    "@QingQosh/alert-registry-bindings": "alert-registry",
+    "@QingQosh/watcher-registry-bindings": "watcher-registry",
 }
 
 FENCE_RE = re.compile(r"^```([A-Za-z]*)[^\n]*\n(.*?)^```", re.M | re.S)

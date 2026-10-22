@@ -1,5 +1,5 @@
 {
-  "name": "@tx-wats/watcher-registry-bindings",
+  "name": "@QingQosh/watcher-registry-bindings",
   "version": "0.1.0",
   "description": "TypeScript bindings for the stellar-txwatch WatcherRegistry Soroban contract",
   "main": "dist/index.js",
@@ -28,16 +28,16 @@
     "txwatch",
     "blockchain"
   ],
-  "author": "Tx-wats <https://github.com/Tx-wats>",
+  "author": "QingQosh <https://github.com/QingQosh>",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tx-wats/OverStand.git",
+    "url": "https://github.com/QingQosh/OverStand.git",
     "directory": "bindings/watcher-registry"
   },
-  "homepage": "https://github.com/Tx-wats/OverStand#readme",
+  "homepage": "https://github.com/QingQosh/OverStand#readme",
   "bugs": {
-    "url": "https://github.com/Tx-wats/OverStand/issues"
+    "url": "https://github.com/QingQosh/OverStand/issues"
   },
   "peerDependencies": {
     "@stellar/stellar-sdk": "^17"

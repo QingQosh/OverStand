@@ -1,25 +1,25 @@
-# Code Owners for Tx-wats/OverStand
+# Code Owners for QingQosh/OverStand
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default fallback owners for the entire repository
-* @Tx-wats @Valreb001
+* @QingQosh @Valreb001
 
 # GitHub Actions workflows and configuration
-/.github/ @Tx-wats @Valreb001
-/.github/workflows/ @Tx-wats @Valreb001
+/.github/ @QingQosh @Valreb001
+/.github/workflows/ @QingQosh @Valreb001
 
 # Smart contracts
-/contracts/ @Tx-wats @Valreb001
-/contracts/alert-registry/ @Tx-wats @Valreb001
-/contracts/watcher-registry/ @Tx-wats @Valreb001
+/contracts/ @QingQosh @Valreb001
+/contracts/alert-registry/ @QingQosh @Valreb001
+/contracts/watcher-registry/ @QingQosh @Valreb001
 
 # TypeScript bindings
-/bindings/ @Tx-wats @Valreb001
-/bindings/alert-registry/ @Tx-wats @Valreb001
-/bindings/watcher-registry/ @Tx-wats @Valreb001
+/bindings/ @QingQosh @Valreb001
+/bindings/alert-registry/ @QingQosh @Valreb001
+/bindings/watcher-registry/ @QingQosh @Valreb001
 
 # Scripts and tooling
-/scripts/ @Tx-wats @Valreb001
+/scripts/ @QingQosh @Valreb001
 
 # Documentation
-/docs/ @Tx-wats @Valreb001
+/docs/ @QingQosh @Valreb001

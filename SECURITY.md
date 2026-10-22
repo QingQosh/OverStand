@@ -14,7 +14,7 @@
 
 Report through GitHub's private vulnerability reporting:
 
-**<https://github.com/Tx-wats/OverStand/security/advisories/new>**
+**<https://github.com/QingQosh/OverStand/security/advisories/new>**
 
 (or **Security → Advisories → Report a vulnerability** on the repository page).
 
@@ -66,8 +66,8 @@ Private vulnerability reporting is a repository setting
 repository admin can also enable it, and check that it is on, with:
 
 ```bash
-gh api -X PUT repos/Tx-wats/OverStand/private-vulnerability-reporting
-gh api repos/Tx-wats/OverStand/private-vulnerability-reporting   # {"enabled": true}
+gh api -X PUT repos/QingQosh/OverStand/private-vulnerability-reporting
+gh api repos/QingQosh/OverStand/private-vulnerability-reporting   # {"enabled": true}
 ```
 
 Keep at least two maintainers subscribed to security advisories so a report
@@ -101,6 +101,6 @@ See [`docs/incident-response.md`](docs/incident-response.md) for full operationa
 
 ## Contact
 
-Security reports: [GitHub private vulnerability reporting](https://github.com/Tx-wats/OverStand/security/advisories/new) (preferred)  
+Security reports: [GitHub private vulnerability reporting](https://github.com/QingQosh/OverStand/security/advisories/new) (preferred)  
 Maintainers: Emmanuel Chukwunyere (emmanuelanalaba@gmail.com), [@Valreb001](https://github.com/Valreb001)  
-Organization: [Tx-wats](https://github.com/Tx-wats)
+Organization: [QingQosh](https://github.com/QingQosh)

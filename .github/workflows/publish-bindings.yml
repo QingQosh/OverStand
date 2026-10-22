@@ -3,7 +3,7 @@ name: Publish TypeScript Bindings
 # Runs on every published GitHub release (e.g. v0.1.0).
 # Generates TypeScript bindings from the compiled WASM using
 # `stellar contract bindings typescript`, then publishes the
-# resulting package to npm under @tx-wats/watcher-registry-bindings.
+# resulting package to npm under @QingQosh/watcher-registry-bindings.
 on:
   release:
     types: [published]
@@ -150,7 +150,7 @@ jobs:
           const fs = require("fs");
           const path = "bindings/watcher-registry/package.json";
           const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
-          const expectedName = "@tx-wats/watcher-registry-bindings";
+          const expectedName = "@QingQosh/watcher-registry-bindings";
           if (pkg.name !== expectedName) {
             throw new Error(`Expected ${expectedName} in ${path}, found ${pkg.name}`);
           }
@@ -205,9 +205,9 @@ jobs:
           cd "$workdir"
           npm init -y >/dev/null
 
-          echo "Waiting for @tx-wats/watcher-registry-bindings@${version} to appear on npm..."
+          echo "Waiting for @QingQosh/watcher-registry-bindings@${version} to appear on npm..."
           for attempt in $(seq 1 10); do
-            if npm install "@tx-wats/watcher-registry-bindings@${version}" "@stellar/stellar-sdk@^17"; then
+            if npm install "@QingQosh/watcher-registry-bindings@${version}" "@stellar/stellar-sdk@^17"; then
               installed=1
               break
             fi
@@ -220,7 +220,7 @@ jobs:
           fi
 
           cat > smoke.mjs <<'JS'
-          import { Client, networks } from "@tx-wats/watcher-registry-bindings";
+          import { Client, networks } from "@QingQosh/watcher-registry-bindings";
 
           const contractId = process.env.TESTNET_ID;
           if (networks.testnet.contractId !== contractId) {

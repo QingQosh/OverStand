@@ -1,4 +1,4 @@
-# @tx-wats/watcher-registry-bindings
+# @QingQosh/watcher-registry-bindings
 
 TypeScript bindings for the **WatcherRegistry** Soroban smart contract,
 part of the [stellar-txwatch-contracts](https://github.com/Tx-wat/stellar-txwatch-contracts)
@@ -11,7 +11,7 @@ and published automatically on every GitHub release.
 ## Installation
 
 ```bash
-npm install @tx-wats/watcher-registry-bindings @stellar/stellar-sdk
+npm install @QingQosh/watcher-registry-bindings @stellar/stellar-sdk
 ```
 
 > **Note:** the npm packages are published by CI on the first tagged release. Until then, generate the bindings locally with `make bindings-watcher` from the repository root.
@@ -22,7 +22,7 @@ npm install @tx-wats/watcher-registry-bindings @stellar/stellar-sdk
 import {
   Client,
   networks,
-} from "@tx-wats/watcher-registry-bindings";
+} from "@QingQosh/watcher-registry-bindings";
 import { Keypair } from "@stellar/stellar-sdk";
 
 // Connect to testnet. `networks.testnet` carries the real deployed contract ID,

@@ -1,5 +1,5 @@
 {
-  "name": "@tx-wats/alert-registry-bindings",
+  "name": "@QingQosh/alert-registry-bindings",
   "version": "0.2.0",
   "description": "TypeScript bindings for the AlertRegistry Soroban smart contract",
   "main": "lib/index.js",
@@ -28,11 +28,11 @@
     "typescript",
     "bindings"
   ],
-  "author": "Tx-wats <https://github.com/Tx-wats>",
+  "author": "QingQosh <https://github.com/QingQosh>",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tx-wats/OverStand.git",
+    "url": "https://github.com/QingQosh/OverStand.git",
     "directory": "bindings/alert-registry"
   },
   "peerDependencies": {
