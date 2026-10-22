@@ -329,5 +329,5 @@ The workspace did not compile and the test suite had never run. Both are now gre
 - `WatcherRegistry::decrement_watcher_count` is now correctly called on `remove_watcher`
   (previously the count only ever incremented — this was a bug fix).
 
-[Unreleased]: https://github.com/Tx-wats/contracts/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/Tx-wats/contracts/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Tx-wats/OverStand/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Tx-wats/OverStand/releases/tag/v0.1.0

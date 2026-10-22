@@ -32,12 +32,12 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tx-wats/contracts.git",
+    "url": "https://github.com/Tx-wats/OverStand.git",
     "directory": "bindings/watcher-registry"
   },
-  "homepage": "https://github.com/Tx-wats/contracts#readme",
+  "homepage": "https://github.com/Tx-wats/OverStand#readme",
   "bugs": {
-    "url": "https://github.com/Tx-wats/contracts/issues"
+    "url": "https://github.com/Tx-wats/OverStand/issues"
   },
   "peerDependencies": {
     "@stellar/stellar-sdk": "^17"

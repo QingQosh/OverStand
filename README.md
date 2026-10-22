@@ -1,6 +1,6 @@
-# tx-watch-contracts ....
+# OverStand
 
-[![codecov](https://codecov.io/gh/Tx-wats/contracts/branch/main/graph/badge.svg)](https://codecov.io/gh/Tx-wats/contracts)
+[![codecov](https://codecov.io/gh/Tx-wats/OverStand/branch/main/graph/badge.svg)](https://codecov.io/gh/Tx-wats/OverStand)
 
 Soroban smart contracts for on-chain alert configuration storage and watcher registry.  
 Part of the [Tx-wats](https://github.com/Tx-wats) organization.
