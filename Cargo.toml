@@ -1,12 +1,12 @@
 [workspace]
 members = [
-    "OverStand/alert-registry",
-    "OverStand/watcher-registry",
-    "OverStand/integration-tests",
-    "OverStand/test-utils",
+    "contracts/alert-registry",
+    "contracts/watcher-registry",
+    "contracts/integration-tests",
+    "contracts/test-utils",
 ]
 exclude = [
-    "OverStand/alert-registry/fuzz",
+    "contracts/alert-registry/fuzz",
 ]
 resolver = "3"
 
