@@ -394,7 +394,7 @@ fn test_pause_unauthorized() {
 fn test_set_guardian_by_admin_emits_event() {
     use soroban_sdk::{symbol_short, testutils::Events as _};
 
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
     let guardian = Address::generate(&env);
@@ -419,7 +419,7 @@ fn test_set_guardian_by_admin_emits_event() {
 // Only the admin may set the guardian
 #[test]
 fn test_set_guardian_non_admin_rejected() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
     let attacker = Address::generate(&env);
@@ -437,7 +437,7 @@ fn test_set_guardian_non_admin_rejected() {
 // get_guardian returns the stored address
 #[test]
 fn test_get_guardian_returns_stored_address() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
     let guardian = Address::generate(&env);
@@ -449,7 +449,7 @@ fn test_get_guardian_returns_stored_address() {
 // The guardian may pause the contract
 #[test]
 fn test_guardian_can_pause() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
     let guardian = Address::generate(&env);
@@ -462,7 +462,7 @@ fn test_guardian_can_pause() {
 // The guardian may never unpause
 #[test]
 fn test_guardian_cannot_unpause() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
     let guardian = Address::generate(&env);
@@ -479,7 +479,7 @@ fn test_guardian_cannot_unpause() {
 // The admin retains full pause/unpause control alongside the guardian
 #[test]
 fn test_admin_can_still_pause_and_unpause_with_guardian() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
     let guardian = Address::generate(&env);
@@ -494,7 +494,7 @@ fn test_admin_can_still_pause_and_unpause_with_guardian() {
 // Rotating the guardian replaces the previous guardian
 #[test]
 fn test_guardian_rotation_replaces_previous() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
     let old_guardian = Address::generate(&env);
@@ -520,7 +520,7 @@ fn test_guardian_rotation_replaces_previous() {
 // get_alert_active is true before expiry and false at/after expiry
 #[test]
 fn test_alert_expiry_get_alert_active() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let owner = Address::generate(&env);
     let target = Address::generate(&env);
 
@@ -550,7 +550,7 @@ fn test_alert_expiry_get_alert_active() {
 // get_active_alerts_for_contract excludes expired alerts
 #[test]
 fn test_alert_expiry_get_active_alerts_for_contract() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let owner = Address::generate(&env);
     let target = Address::generate(&env);
 
@@ -589,7 +589,7 @@ fn test_alert_expiry_get_active_alerts_for_contract() {
 // get_active_alert_count excludes expired alerts
 #[test]
 fn test_alert_expiry_get_active_alert_count() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let owner = Address::generate(&env);
     let target = Address::generate(&env);
 
@@ -621,7 +621,7 @@ fn test_alert_expiry_get_active_alert_count() {
 // get_alerts_modified_since treats expired alerts as inactive
 #[test]
 fn test_alert_expiry_get_alerts_modified_since() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let owner = Address::generate(&env);
     let target = Address::generate(&env);
 
@@ -637,13 +637,13 @@ fn test_alert_expiry_get_alerts_modified_since() {
 
     // Before expiry the alert is reported active.
     env.ledger().with_mut(|li| li.sequence_number = 109);
-    let results = client.get_alerts_modified_since(&0u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &0u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 1);
     assert!(results.get(0).unwrap().active);
 
     // After expiry the alert is still returned but reported inactive.
     env.ledger().with_mut(|li| li.sequence_number = 110);
-    let results = client.get_alerts_modified_since(&0u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &0u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 1);
     assert!(!results.get(0).unwrap().active);
 }
@@ -651,7 +651,7 @@ fn test_alert_expiry_get_alerts_modified_since() {
 // Explicit deactivation still works and interacts correctly with expiry
 #[test]
 fn test_alert_expiry_explicit_deactivation() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let owner = Address::generate(&env);
     let target = Address::generate(&env);
 
@@ -682,7 +682,7 @@ fn test_alert_expiry_explicit_deactivation() {
 // update_alert can set and clear the expiry
 #[test]
 fn test_alert_expiry_update_alert_set_and_clear() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let owner = Address::generate(&env);
     let target = Address::generate(&env);
 
@@ -708,7 +708,7 @@ fn test_alert_expiry_update_alert_set_and_clear() {
 // Removing an alert clears its expiry entry
 #[test]
 fn test_alert_expiry_cleared_on_remove() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let owner = Address::generate(&env);
     let target = Address::generate(&env);
 
@@ -730,7 +730,7 @@ fn test_alert_expiry_cleared_on_remove() {
     assert_eq!(client.get_active_alert_count(&owner, &target), 0);
 #[test]
 fn test_pause_and_unpause_are_idempotent() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
 
@@ -1047,7 +1047,7 @@ fn test_update_alert_too_many_rules() {
 fn test_register_alert_exactly_50_rules() {
     let (env, _admin, client) = setup();
 fn test_register_alert_effective_max_rules() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let owner = Address::generate(&env);
     let target = Address::generate(&env);
 
@@ -1787,7 +1787,7 @@ fn test_clear_watcher_registry_emits_disable_event() {
 
 #[test]
 fn test_is_watcher_gating_enabled_default_false() {
-    let (_env, client) = setup();
+    let (_env, admin, client) = setup();
     assert!(!client.is_watcher_gating_enabled());
     assert!(client.get_watcher_registry().is_none());
 }
@@ -1988,7 +1988,7 @@ fn test_update_target_contract_moves_indices() {
 // offset/limit.
 #[test]
 fn test_get_active_contract_alerts_paged() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let owner = Address::generate(&env);
     let target = Address::generate(&env);
     let querier = Address::generate(&env);
@@ -2148,7 +2148,7 @@ fn test_deactivate_all_alerts_precise_behavior() {
 
 #[test]
 fn test_get_alerts_modified_since_precision() {
-    let (env, _admin, client) = setup();
+    let (env, admin, client) = setup();
     let owner = Address::generate(&env);
     let target = Address::generate(&env);
 
@@ -2173,24 +2173,24 @@ fn test_get_alerts_modified_since_precision() {
     env.ledger().set_timestamp(3000);
     client.update_webhook(&owner, &id0, &hash64c(&env, 'z'));
 
-    let res_0 = client.get_alerts_modified_since(&0, &0u32, &u32::MAX);
+    let res_0 = client.get_alerts_modified_since(&admin, &0, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_0.len(), 2);
 
-    let res_1000 = client.get_alerts_modified_since(&1000, &0u32, &u32::MAX);
+    let res_1000 = client.get_alerts_modified_since(&admin, &1000, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_1000.len(), 2);
 
-    let res_2000 = client.get_alerts_modified_since(&2000, &0u32, &u32::MAX);
+    let res_2000 = client.get_alerts_modified_since(&admin, &2000, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_2000.len(), 2);
 
-    let res_2001 = client.get_alerts_modified_since(&2001, &0u32, &u32::MAX);
+    let res_2001 = client.get_alerts_modified_since(&admin, &2001, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_2001.len(), 1);
     assert_eq!(res_2001.get(0).unwrap().label, str(&env, "A0"));
 
-    let res_3000 = client.get_alerts_modified_since(&3000, &0u32, &u32::MAX);
+    let res_3000 = client.get_alerts_modified_since(&admin, &3000, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_3000.len(), 1);
     assert_eq!(res_3000.get(0).unwrap().label, str(&env, "A0"));
 
-    let res_3001 = client.get_alerts_modified_since(&3001, &0u32, &u32::MAX);
+    let res_3001 = client.get_alerts_modified_since(&admin, &3001, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_3001.len(), 0);
 
     let _ = id1;
@@ -2250,31 +2250,31 @@ fn test_get_alerts_modified_since_ledger_precision() {
     assert_eq!(cfg2.updated_ledger, 102);
 
     // With timestamp-based query, since=1000 returns all 3, but since=1001 returns none
-    assert_eq!(client.get_alerts_modified_since(&1000, &0u32, &u32::MAX).len(), 3);
-    assert_eq!(client.get_alerts_modified_since(&1001, &0u32, &u32::MAX).len(), 0);
+    assert_eq!(client.get_alerts_modified_since(&admin, &1000, &0u32, &u32::MAX).unwrap().len(), 3);
+    assert_eq!(client.get_alerts_modified_since(&admin, &1001, &0u32, &u32::MAX).unwrap().len(), 0);
 
     // Monotonic ledger-based query has no ambiguity:
     // since_ledger = 0 returns all 3
-    let res_0 = client.get_alerts_modified_since_ledger(&0, &0u32, &u32::MAX);
+    let res_0 = client.get_alerts_modified_since_ledger(&admin, &0, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_0.len(), 3);
 
     // since_ledger = 100 returns all 3
-    let res_100 = client.get_alerts_modified_since_ledger(&100, &0u32, &u32::MAX);
+    let res_100 = client.get_alerts_modified_since_ledger(&admin, &100, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_100.len(), 3);
 
     // since_ledger = 101 returns id1 and id2
-    let res_101 = client.get_alerts_modified_since_ledger(&101, &0u32, &u32::MAX);
+    let res_101 = client.get_alerts_modified_since_ledger(&admin, &101, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_101.len(), 2);
     assert_eq!(res_101.get(0).unwrap().label, str(&env, "A1"));
     assert_eq!(res_101.get(1).unwrap().label, str(&env, "A2"));
 
     // since_ledger = 102 returns only id2
-    let res_102 = client.get_alerts_modified_since_ledger(&102, &0u32, &u32::MAX);
+    let res_102 = client.get_alerts_modified_since_ledger(&admin, &102, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_102.len(), 1);
     assert_eq!(res_102.get(0).unwrap().label, str(&env, "A2"));
 
     // since_ledger = 103 returns 0
-    let res_103 = client.get_alerts_modified_since_ledger(&103, &0u32, &u32::MAX);
+    let res_103 = client.get_alerts_modified_since_ledger(&admin, &103, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_103.len(), 0);
 
     // Now update id0 at ledger sequence 200
@@ -2288,22 +2288,22 @@ fn test_get_alerts_modified_since_ledger_precision() {
     assert_eq!(cfg0_after.updated_ledger, 200);
 
     // Now since_ledger = 105 returns only id0 (updated at ledger 200)
-    let res_105 = client.get_alerts_modified_since_ledger(&105, &0u32, &u32::MAX);
+    let res_105 = client.get_alerts_modified_since_ledger(&admin, &105, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_105.len(), 1);
     assert_eq!(res_105.get(0).unwrap().label, str(&env, "A0"));
 
     // Pagination test: offset 0, limit 1
-    let page1 = client.get_alerts_modified_since_ledger(&0, &0, &1);
+    let page1 = client.get_alerts_modified_since_ledger(&admin, &0, &0, &1).unwrap();
     assert_eq!(page1.len(), 1);
     assert_eq!(page1.get(0).unwrap().label, str(&env, "A0"));
 
-    let page2 = client.get_alerts_modified_since_ledger(&0, &1, &1);
+    let page2 = client.get_alerts_modified_since_ledger(&admin, &0, &1, &1).unwrap();
     assert_eq!(page2.len(), 1);
     assert_eq!(page2.get(0).unwrap().label, str(&env, "A1"));
 
     // Removed alerts are returned as inactive tombstones
     client.remove_alert(&owner, &id1);
-    let res_after_remove = client.get_alerts_modified_since_ledger(&0, &0u32, &u32::MAX);
+    let res_after_remove = client.get_alerts_modified_since_ledger(&admin, &0, &0u32, &u32::MAX).unwrap();
     assert_eq!(res_after_remove.len(), 3);
     assert_eq!(res_after_remove.get(0).unwrap().label, str(&env, "A0"));
     assert_eq!(res_after_remove.get(1).unwrap().label, str(&env, "A1"));
@@ -2637,7 +2637,7 @@ fn test_deactivate_alert_by_admin_emits_event() {
 
 #[test]
 fn test_deactivate_alert_by_admin_is_idempotent() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
 
@@ -3024,7 +3024,7 @@ fn setup_with_watcher_registry() -> (
 
 #[test]
 fn test_global_alert_limit_defaults_to_zero_unlimited() {
-    let (_env, client) = setup();
+    let (_env, admin, client) = setup();
     assert_eq!(client.get_global_alert_limit(), 0u32);
 }
 
@@ -3141,7 +3141,7 @@ fn test_set_global_alert_limit_non_admin_rejected() {
 
 #[test]
 fn test_per_contract_alert_limit_defaults_to_zero_unlimited() {
-    let (_env, client) = setup();
+    let (_env, admin, client) = setup();
     assert_eq!(client.get_per_contract_alert_limit(), 0u32);
 }
 
@@ -3442,7 +3442,7 @@ fn test_get_alerts_by_ids_preserves_order_and_skips_missing() {
 
 #[test]
 fn test_list_getters_pair_ids_with_configs_after_gaps() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let owner = Address::generate(&env);
     let target = Address::generate(&env);
     let labels = ["a", "b", "c", "d"];
@@ -3473,7 +3473,7 @@ fn test_list_getters_pair_ids_with_configs_after_gaps() {
     }
 
     // The sync getter also returns removal tombstones, still paired by ID.
-    let synced = client.get_alerts_modified_since(&0u64, &0u32, &10u32);
+    let synced = client.get_alerts_modified_since(&admin, &0u64, &0u32, &10u32).unwrap();
     for (id, cfg) in synced.iter() {
         assert_eq!(cfg.label, str(&env, labels[id as usize]));
     }
@@ -3711,7 +3711,7 @@ fn test_watcher_registry_get_alert_family_rejects_non_watcher() {
 // 15. get_watcher_registry returns None before configuration
 #[test]
 fn test_get_watcher_registry_none_before_set() {
-    let (_env, client) = setup();
+    let (_env, admin, client) = setup();
     assert!(client.get_watcher_registry().is_none());
     assert!(!client.is_watcher_gating_enabled());
 }
@@ -4332,15 +4332,15 @@ fn test_get_alerts_modified_since_zero_returns_all() {
     client.register_alert(&owner, &target, &str(&env, "A"), &hash64(&env), &vec![&env, str(&env, "rule:transfer")]);
     client.register_alert(&owner, &target, &str(&env, "B"), &hash64(&env), &vec![&env, str(&env, "rule:transfer")]);
 
-    let results = client.get_alerts_modified_since(&0u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &0u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 2);
 }
 
 // 19. Returns empty vec when no alerts exist
 #[test]
 fn test_get_alerts_modified_since_empty_registry() {
-    let (_env, client) = setup();
-    let results = client.get_alerts_modified_since(&0u64, &0u32, &u32::MAX);
+    let (_env, admin, client) = setup();
+    let results = client.get_alerts_modified_since(&admin, &0u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 0);
 }
 
@@ -4372,7 +4372,7 @@ fn test_get_alerts_modified_since_filters_old_alerts() {
     );
 
     // Query with since = 1000 — should only return the second alert
-    let results = client.get_alerts_modified_since(&1000u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &1000u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 1);
     assert_eq!(results.get(0).unwrap().label, str(&env, "New"));
 }
@@ -4395,7 +4395,7 @@ fn test_get_alerts_modified_since_includes_updated_alert() {
     client.update_alert(&owner, &id1, &vec![&env, str(&env, "rule:transfer")], &false);
 
     // Incremental sync from timestamp 500 should return only the updated alert
-    let results = client.get_alerts_modified_since(&500u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &500u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 1);
     assert_eq!(results.get(0).unwrap().label, str(&env, "A"));
 }
@@ -4414,7 +4414,7 @@ fn test_get_alerts_modified_since_excludes_removed_alerts() {
     client.remove_alert(&owner, &id1);
 
     // Only the surviving alert should be returned
-    let results = client.get_alerts_modified_since(&0u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &0u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 1);
     assert_eq!(results.get(0).unwrap().label, str(&env, "B"));
 }
@@ -4436,11 +4436,11 @@ fn test_get_alerts_modified_since_boundary_inclusive() {
     );
 
     // since == updated_at should be inclusive
-    let results = client.get_alerts_modified_since(&42u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &42u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 1);
 
     // since == updated_at + 1 should exclude it
-    let results_after = client.get_alerts_modified_since(&43u64, &0u32, &u32::MAX);
+    let results_after = client.get_alerts_modified_since(&admin, &43u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results_after.len(), 0);
 }
 
@@ -4684,7 +4684,7 @@ fn test_load_get_alerts_modified_since_instruction_cost() {
 
     // Measure scan instruction cost across all N alerts
     let cpu_before = env.cost_estimate().budget().cpu_instruction_cost();
-    let modified = client.get_alerts_modified_since(&0u64, &0u32, &u32::MAX);
+    let modified = client.get_alerts_modified_since(&admin, &0u64, &0u32, &u32::MAX).unwrap();
     let cpu_after = env.cost_estimate().budget().cpu_instruction_cost();
     let scan_cost = cpu_after.saturating_sub(cpu_before);
 
@@ -4722,7 +4722,7 @@ fn test_get_alerts_modified_since_pagination_bounds_scan_cost() {
     // A small page near the end of a large registry must still be cheap:
     // cost is bounded by PAGE, not by N.
     let cpu_before = env.cost_estimate().budget().cpu_instruction_cost();
-    let page = client.get_alerts_modified_since(&0u64, &390u32, &PAGE);
+    let page = client.get_alerts_modified_since(&admin, &0u64, &390u32, &PAGE).unwrap();
     let cpu_after = env.cost_estimate().budget().cpu_instruction_cost();
     let page_scan_cost = cpu_after.saturating_sub(cpu_before);
 
@@ -4738,7 +4738,7 @@ fn test_get_alerts_modified_since_pagination_bounds_scan_cost() {
 
     // Requesting past the end of the registry returns an empty page
     // rather than scanning anything.
-    let empty_page = client.get_alerts_modified_since(&0u64, &N, &PAGE);
+    let empty_page = client.get_alerts_modified_since(&admin, &0u64, &N, &PAGE).unwrap();
     assert_eq!(empty_page.len(), 0);
 }
 
@@ -5441,7 +5441,7 @@ fn test_bump_alert_succeeds() {
 // B-2. bump_alert returns AlertNotFound for a non-existent ID
 #[test]
 fn test_bump_alert_not_found() {
-    let (_env, client) = setup();
+    let (_env, admin, client) = setup();
     assert_eq!(
         client
             .try_bump_alert(&999u64, &17_280u32)
@@ -6041,15 +6041,15 @@ fn test_get_alerts_modified_since_zero_returns_all() {
     client.register_alert(&owner, &target, &str(&env, "A"), &hash64(&env), &vec![&env, str(&env, "rule:transfer")]);
     client.register_alert(&owner, &target, &str(&env, "B"), &hash64(&env), &vec![&env, str(&env, "rule:transfer")]);
 
-    let results = client.get_alerts_modified_since(&0u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &0u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 2);
 }
 
 // 19. Returns empty vec when no alerts exist
 #[test]
 fn test_get_alerts_modified_since_empty_registry() {
-    let (_env, client) = setup();
-    let results = client.get_alerts_modified_since(&0u64, &0u32, &u32::MAX);
+    let (_env, admin, client) = setup();
+    let results = client.get_alerts_modified_since(&admin, &0u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 0);
 }
 
@@ -6081,7 +6081,7 @@ fn test_get_alerts_modified_since_filters_old_alerts() {
     );
 
     // Query with since = 1000 — should only return the second alert
-    let results = client.get_alerts_modified_since(&1000u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &1000u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 1);
     assert_eq!(results.get(0).unwrap().label, str(&env, "New"));
 }
@@ -6104,7 +6104,7 @@ fn test_get_alerts_modified_since_includes_updated_alert() {
     client.update_alert(&owner, &id1, &vec![&env, str(&env, "rule:transfer")], &false);
 
     // Incremental sync from timestamp 500 should return only the updated alert
-    let results = client.get_alerts_modified_since(&500u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &500u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 1);
     assert_eq!(results.get(0).unwrap().label, str(&env, "A"));
 }
@@ -6123,7 +6123,7 @@ fn test_get_alerts_modified_since_excludes_removed_alerts() {
     client.remove_alert(&owner, &id1);
 
     // Only the surviving alert should be returned
-    let results = client.get_alerts_modified_since(&0u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &0u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 1);
     assert_eq!(results.get(0).unwrap().label, str(&env, "B"));
 }
@@ -6145,11 +6145,11 @@ fn test_get_alerts_modified_since_boundary_inclusive() {
     );
 
     // since == updated_at should be inclusive
-    let results = client.get_alerts_modified_since(&42u64, &0u32, &u32::MAX);
+    let results = client.get_alerts_modified_since(&admin, &42u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results.len(), 1);
 
     // since == updated_at + 1 should exclude it
-    let results_after = client.get_alerts_modified_since(&43u64, &0u32, &u32::MAX);
+    let results_after = client.get_alerts_modified_since(&admin, &43u64, &0u32, &u32::MAX).unwrap();
     assert_eq!(results_after.len(), 0);
 }
 
@@ -6389,7 +6389,7 @@ fn test_load_get_alerts_modified_since_instruction_cost() {
 
     // Measure scan instruction cost across all N alerts
     let cpu_before = env.cost_estimate().budget().cpu_instruction_cost();
-    let modified = client.get_alerts_modified_since(&0u64, &0u32, &u32::MAX);
+    let modified = client.get_alerts_modified_since(&admin, &0u64, &0u32, &u32::MAX).unwrap();
     let cpu_after = env.cost_estimate().budget().cpu_instruction_cost();
     let scan_cost = cpu_after.saturating_sub(cpu_before);
 
@@ -6427,7 +6427,7 @@ fn test_get_alerts_modified_since_pagination_bounds_scan_cost() {
     // A small page near the end of a large registry must still be cheap:
     // cost is bounded by PAGE, not by N.
     let cpu_before = env.cost_estimate().budget().cpu_instruction_cost();
-    let page = client.get_alerts_modified_since(&0u64, &390u32, &PAGE);
+    let page = client.get_alerts_modified_since(&admin, &0u64, &390u32, &PAGE).unwrap();
     let cpu_after = env.cost_estimate().budget().cpu_instruction_cost();
     let page_scan_cost = cpu_after.saturating_sub(cpu_before);
 
@@ -6443,7 +6443,7 @@ fn test_get_alerts_modified_since_pagination_bounds_scan_cost() {
 
     // Requesting past the end of the registry returns an empty page
     // rather than scanning anything.
-    let empty_page = client.get_alerts_modified_since(&0u64, &N, &PAGE);
+    let empty_page = client.get_alerts_modified_since(&admin, &0u64, &N, &PAGE).unwrap();
     assert_eq!(empty_page.len(), 0);
 }
 
@@ -7119,7 +7119,7 @@ fn test_bump_alert_succeeds() {
 // B-2. bump_alert returns AlertNotFound for a non-existent ID
 #[test]
 fn test_bump_alert_not_found() {
-    let (_env, client) = setup();
+    let (_env, admin, client) = setup();
     assert_eq!(
         client
             .try_bump_alert(&999u64, &17_280u32)
@@ -7311,7 +7311,7 @@ fn test_pending_transfer_and_suspension_getters_are_public_in_gated_mode() {
 // G-1. get_guardian returns None before any guardian is set.
 #[test]
 fn test_get_guardian_none_before_set() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
     assert!(client.get_guardian().is_none());
@@ -7320,7 +7320,7 @@ fn test_get_guardian_none_before_set() {
 // G-2. set_guardian persists the address; get_guardian returns it.
 #[test]
 fn test_set_and_get_guardian() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let guardian = Address::generate(&env);
     client.initialize(&admin);
@@ -7332,7 +7332,7 @@ fn test_set_and_get_guardian() {
 // G-3. set_guardian is admin-only; a non-admin is rejected with Unauthorized.
 #[test]
 fn test_set_guardian_non_admin_rejected() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let attacker = Address::generate(&env);
     let guardian = Address::generate(&env);
@@ -7365,7 +7365,7 @@ fn test_set_guardian_requires_auth() {
 // G-5. clear_guardian removes the guardian; subsequent get_guardian is None.
 #[test]
 fn test_clear_guardian_removes_guardian() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let guardian = Address::generate(&env);
     client.initialize(&admin);
@@ -7380,7 +7380,7 @@ fn test_clear_guardian_removes_guardian() {
 // G-6. clear_guardian is admin-only; a non-admin is rejected with Unauthorized.
 #[test]
 fn test_clear_guardian_non_admin_rejected() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let attacker = Address::generate(&env);
     client.initialize(&admin);
@@ -7394,7 +7394,7 @@ fn test_clear_guardian_non_admin_rejected() {
 // G-7. clear_guardian silently succeeds when no guardian is configured.
 #[test]
 fn test_clear_guardian_idempotent_when_none() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
 
@@ -7405,7 +7405,7 @@ fn test_clear_guardian_idempotent_when_none() {
 // G-8. Guardian can call pause; the contract becomes paused.
 #[test]
 fn test_guardian_can_pause() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let guardian = Address::generate(&env);
     client.initialize(&admin);
@@ -7419,7 +7419,7 @@ fn test_guardian_can_pause() {
 // G-9. Guardian cannot call unpause — only the admin may lift the pause.
 #[test]
 fn test_guardian_cannot_unpause() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let guardian = Address::generate(&env);
     client.initialize(&admin);
@@ -7439,7 +7439,7 @@ fn test_guardian_cannot_unpause() {
 // to accept a `caller` argument).
 #[test]
 fn test_admin_can_still_pause() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     client.initialize(&admin);
 
@@ -7451,7 +7451,7 @@ fn test_admin_can_still_pause() {
 // NotAGuardian (not the generic Unauthorized).
 #[test]
 fn test_stranger_cannot_pause() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let stranger = Address::generate(&env);
     client.initialize(&admin);
@@ -7465,7 +7465,7 @@ fn test_stranger_cannot_pause() {
 // G-12. After clear_guardian the former guardian can no longer pause.
 #[test]
 fn test_cleared_guardian_cannot_pause() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let guardian = Address::generate(&env);
     client.initialize(&admin);
@@ -7489,7 +7489,7 @@ fn test_cleared_guardian_cannot_pause() {
 fn test_set_guardian_emits_event() {
     use soroban_sdk::{symbol_short, testutils::Events as _};
 
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let guardian = Address::generate(&env);
     client.initialize(&admin);
@@ -7518,7 +7518,7 @@ fn test_set_guardian_emits_event() {
 fn test_clear_guardian_emits_event() {
     use soroban_sdk::{symbol_short, testutils::Events as _};
 
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let guardian = Address::generate(&env);
     client.initialize(&admin);
@@ -7562,7 +7562,7 @@ fn test_clear_guardian_emits_event() {
 fn test_guardian_pause_emits_event() {
     use soroban_sdk::{symbol_short, testutils::Events as _};
 
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let guardian = Address::generate(&env);
     client.initialize(&admin);
@@ -7591,7 +7591,7 @@ fn test_guardian_pause_emits_event() {
 // G-16. get_configuration includes the guardian field.
 #[test]
 fn test_get_configuration_includes_guardian() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let guardian = Address::generate(&env);
     client.initialize(&admin);
@@ -7611,7 +7611,7 @@ fn test_get_configuration_includes_guardian() {
 // G-17. Guardian-triggered pause blocks state mutations; admin lifts it.
 #[test]
 fn test_guardian_pause_blocks_mutations() {
-    let (env, client) = setup();
+    let (env, admin, client) = setup();
     let admin = Address::generate(&env);
     let guardian = Address::generate(&env);
     let owner = Address::generate(&env);
@@ -7801,4 +7801,275 @@ fn test_validate_rule_rejects_bad_min_parameter() {
             Err(ContractError::InvalidRuleDescriptor)
         );
     }
+}
+
+
+// ── Authentication Tests for #197 and #198 ─────────────────────────────────
+
+// Test that get_alert requires authentication from the querier
+#[test]
+fn test_get_alert_requires_auth() {
+    let env = Env::default();
+    let admin = Address::generate(&env);
+    let contract_id = env.register(AlertRegistry, (&admin,));
+    let client = AlertRegistryClient::new(&env, &contract_id);
+
+    // Set up with mocked auths
+    env.mock_all_auths();
+    
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    let querier = Address::generate(&env);
+
+    // Register an alert
+    let id = client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Test"),
+        &hash64(&env),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+
+    // Now disable mock_all_auths and try calling without proper auth
+    env.mock_all_auths();
+    env.set_auths(&[]); // Empty auth set means no signatures
+
+    // This should fail because querier.require_auth() will fail
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        client.get_alert(&querier, &id)
+    }));
+    
+    // With no mocked auth, it should either return an error or panic
+    // The exact behavior depends on how the SDK handles auth failures
+    assert!(result.is_err() || matches!(result, Ok(Err(_))));
+}
+
+// Test that get_alert succeeds with proper authentication
+#[test]
+fn test_get_alert_succeeds_with_auth() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    let querier = Address::generate(&env);
+
+    let id = client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Test"),
+        &hash64(&env),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+
+    // With mock_all_auths(), this should succeed
+    let result = client.get_alert(&querier, &id);
+    assert!(result.is_ok());
+    assert!(result.unwrap().is_some());
+}
+
+// Test that get_alerts_modified_since requires authentication
+#[test]
+fn test_get_alerts_modified_since_requires_auth() {
+    let env = Env::default();
+    let admin = Address::generate(&env);
+    let contract_id = env.register(AlertRegistry, (&admin,));
+    let client = AlertRegistryClient::new(&env, &contract_id);
+
+    env.mock_all_auths();
+    
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    let querier = Address::generate(&env);
+
+    // Register an alert
+    client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Test"),
+        &hash64(&env),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+
+    // Disable mock_all_auths
+    env.mock_all_auths();
+    env.set_auths(&[]);
+
+    // This should fail due to auth check
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        client.get_alerts_modified_since(&querier, &0u64, &0u32, &u32::MAX)
+    }));
+    
+    assert!(result.is_err() || matches!(result, Ok(Err(_))));
+}
+
+// Test that get_alerts_modified_since succeeds with auth
+#[test]
+fn test_get_alerts_modified_since_succeeds_with_auth() {
+    let (env, admin, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+
+    client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Test"),
+        &hash64(&env),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+
+    // With mock_all_auths and admin as querier
+    let result = client.get_alerts_modified_since(&admin, &0u64, &0u32, &u32::MAX);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().len(), 1);
+}
+
+// Test that get_alerts_modified_since_ledger requires authentication
+#[test]
+fn test_get_alerts_modified_since_ledger_requires_auth() {
+    let env = Env::default();
+    let admin = Address::generate(&env);
+    let contract_id = env.register(AlertRegistry, (&admin,));
+    let client = AlertRegistryClient::new(&env, &contract_id);
+
+    env.mock_all_auths();
+    
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    let querier = Address::generate(&env);
+
+    // Register an alert
+    client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Test"),
+        &hash64(&env),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+
+    // Disable mock_all_auths
+    env.mock_all_auths();
+    env.set_auths(&[]);
+
+    // This should fail due to auth check
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        client.get_alerts_modified_since_ledger(&querier, &0u32, &0u32, &u32::MAX)
+    }));
+    
+    assert!(result.is_err() || matches!(result, Ok(Err(_))));
+}
+
+// Test that get_alerts_modified_since_ledger succeeds with auth
+#[test]
+fn test_get_alerts_modified_since_ledger_succeeds_with_auth() {
+    let (env, admin, client) = setup();
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+
+    client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Test"),
+        &hash64(&env),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+
+    // With mock_all_auths and admin as querier
+    let result = client.get_alerts_modified_since_ledger(&admin, &0u32, &0u32, &u32::MAX);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().len(), 1);
+}
+
+// Test that other gated read functions also require auth (get_alert_active)
+#[test]
+fn test_get_alert_active_requires_auth() {
+    let env = Env::default();
+    let admin = Address::generate(&env);
+    let contract_id = env.register(AlertRegistry, (&admin,));
+    let client = AlertRegistryClient::new(&env, &contract_id);
+
+    env.mock_all_auths();
+    
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    let querier = Address::generate(&env);
+
+    let id = client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Test"),
+        &hash64(&env),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+
+    env.mock_all_auths();
+    env.set_auths(&[]);
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        client.get_alert_active(&querier, &id)
+    }));
+    
+    assert!(result.is_err() || matches!(result, Ok(Err(_))));
+}
+
+// Test that get_alerts_by_owner requires auth
+#[test]
+fn test_get_alerts_by_owner_requires_auth() {
+    let env = Env::default();
+    let admin = Address::generate(&env);
+    let contract_id = env.register(AlertRegistry, (&admin,));
+    let client = AlertRegistryClient::new(&env, &contract_id);
+
+    env.mock_all_auths();
+    
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    let querier = Address::generate(&env);
+
+    client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Test"),
+        &hash64(&env),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+
+    env.mock_all_auths();
+    env.set_auths(&[]);
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        client.get_alerts_by_owner(&querier, &owner)
+    }));
+    
+    assert!(result.is_err() || matches!(result, Ok(Err(_))));
+}
+
+// Test that get_contract_alerts_paginated requires auth
+#[test]
+fn test_get_contract_alerts_paginated_requires_auth() {
+    let env = Env::default();
+    let admin = Address::generate(&env);
+    let contract_id = env.register(AlertRegistry, (&admin,));
+    let client = AlertRegistryClient::new(&env, &contract_id);
+
+    env.mock_all_auths();
+    
+    let owner = Address::generate(&env);
+    let target = Address::generate(&env);
+    let querier = Address::generate(&env);
+
+    client.register_alert(
+        &owner,
+        &target,
+        &str(&env, "Test"),
+        &hash64(&env),
+        &vec![&env, str(&env, "rule:transfer")],
+    );
+
+    env.mock_all_auths();
+    env.set_auths(&[]);
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        client.get_contract_alerts_paginated(&querier, &target, &0, &100)
+    }));
+    
+    assert!(result.is_err() || matches!(result, Ok(Err(_))));
 }

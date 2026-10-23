@@ -29,6 +29,81 @@ cargo test
 make bindings-all
 ```
 
+## Migrating to v0.2.1
+
+AlertRegistry v0.2.1 adds authentication enforcement to all gated read operations to prevent querier impersonation.
+
+### Breaking Changes
+
+All read functions that accept a `querier: Address` parameter now call `querier.require_auth()` as their first operation. This means:
+- Callers must sign the transaction as the querier address
+- All return types are preserved (the change is additive at the protocol level)
+- `get_alerts_modified_since` and `get_alerts_modified_since_ledger` now return `Result<Vec<AlertConfig>, ContractError>` instead of `Vec<AlertConfig>`
+
+### Affected Functions
+
+The following 10 functions now enforce querier authentication:
+- `get_alert(env, querier, config_id)` → requires `querier` to sign
+- `get_alert_active(env, querier, config_id)` → requires `querier` to sign
+- `get_alert_owner(env, querier, config_id)` → requires `querier` to sign
+- `get_alerts_for_contract(env, querier, target_contract)` → requires `querier` to sign
+- `get_active_alerts_for_contract(env, querier, target_contract)` → requires `querier` to sign
+- `get_alerts_by_owner(env, querier, owner)` → requires `querier` to sign
+- `get_alerts_by_ids(env, querier, ids)` → requires `querier` to sign
+- `get_contract_alerts_paginated(env, querier, target_contract, offset, limit)` → requires `querier` to sign
+- `get_alerts_by_owner_paginated(env, querier, owner, offset, limit)` → requires `querier` to sign
+- `get_active_contract_alerts_paged(env, querier, target_contract, offset, limit)` → requires `querier` to sign
+- `get_alerts_modified_since(env, querier, since, offset, limit)` → now returns `Result<Vec<AlertConfig>, ContractError>` and requires `querier` to sign
+- `get_alerts_modified_since_ledger(env, querier, since_ledger, offset, limit)` → now returns `Result<Vec<AlertConfig>, ContractError>` and requires `querier` to sign
+
+### CLI Example
+
+Before (v0.2.0):
+```bash
+stellar contract invoke --network testnet --contract <CONTRACT_ID> -- \
+  get_alert \
+  --querier GAAAAA... \
+  --config_id 1
+```
+
+After (v0.2.1):
+```bash
+# Use --source to sign the transaction as querier
+stellar contract invoke --network testnet --contract <CONTRACT_ID> \
+  --source my-key-name -- \
+  get_alert \
+  --querier my-key-name \
+  --config_id 1
+```
+
+### Code Migration
+
+**Rust/Soroban SDK:**
+
+```rust
+// Before: unverified querier parameter
+let alerts = client.get_alerts_by_owner(&querier, &owner);
+
+// After: signature required, Result type
+let alerts = client.get_alerts_by_owner(&querier, &owner)?;
+```
+
+**TypeScript:**
+
+```typescript
+// Before
+const alerts = contract.get_alerts_by_owner({
+  querier: Address.fromString("GAAAAA..."),
+  owner: Address.fromString("GBBBBB...")
+});
+
+// After: same interface, but caller must include querier in transaction signature
+const alerts = await contract.get_alerts_by_owner({
+  querier: Address.fromString("GAAAAA..."),
+  owner: Address.fromString("GBBBBB...")
+});
+```
+
 ## TypeScript Bindings
 
 TypeScript bindings for the AlertRegistry contract live in

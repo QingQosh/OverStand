@@ -1,4 +1,4 @@
-#![allow(
+﻿#![allow(
     clippy::pedantic,
     clippy::too_many_lines,
     clippy::cast_possible_truncation,

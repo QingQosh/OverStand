@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-10-23
+
+### Breaking Changes (Security)
+
+- **`get_alert`, `get_alert_active`, `get_alerts_for_contract`, `get_active_alerts_for_contract`,
+  `get_alerts_by_owner`, `get_contract_alerts_paginated`, `get_alerts_by_owner_paginated`,
+  `get_active_contract_alerts_paged`, and `get_alerts_by_ids` now call `querier.require_auth()`.**
+  Callers must sign the transaction as the querier address. This prevents impersonation attacks where
+  a caller could pass any address as the querier and read alerts. (#197)
+
+- **`get_alerts_modified_since` and `get_alerts_modified_since_ledger` now require a `querier: Address` parameter**
+  (as the second parameter, right after `env`) **and enforce both authentication (`querier.require_auth()`) and
+  watcher-gating (`assert_watcher_if_configured`).** Return type changed from `Vec<AlertConfig>` to
+  `Result<Vec<AlertConfig>, ContractError>` to propagate errors. The `#[must_use]` attribute was removed from these
+  functions since `Result` is inherently marked as must-use. (#198)
+
+### Migration
+
+- All gated read functions now require the caller to sign the transaction. When invoking via `stellar contract invoke`,
+  pass the `--source <QUERIER_IDENTITY>` flag so the transaction is signed by the querier address.
+- `get_alerts_modified_since` and `get_alerts_modified_since_ledger` now take a `querier` parameter:
+  - Before: `client.get_alerts_modified_since(&1000u64, &0u32, &100u32)`
+  - After: `client.get_alerts_modified_since(&querier, &1000u64, &0u32, &100u32)?`
+- Because these sync functions now return `Result`, callers must handle the result (e.g., with `?` in async/fallible contexts, or `.unwrap()` in tests).
+
 ## [Unreleased]
 
 ### Changed — npm package names

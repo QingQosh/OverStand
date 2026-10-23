@@ -16,7 +16,7 @@ use soroban_sdk::{
 };
 
 contractmeta!(key = "Name", val = "AlertRegistry");
-contractmeta!(key = "Version", val = "0.2.0");
+contractmeta!(key = "Version", val = "0.2.1");
 
 // ── Storage keys ────────────────────────────────────────────────────────────
 
@@ -2508,6 +2508,7 @@ impl AlertRegistry {
         querier: Address,
         target_contract: Address,
     ) -> Result<Vec<AlertConfig>, ContractError> {
+        querier.require_auth();
         Self::assert_watcher_if_configured(&env, &querier)?;
         let ids = Self::contract_index(&env, &target_contract);
         Ok(Self::configs_for_ids(&env, &ids))
@@ -2540,6 +2541,7 @@ impl AlertRegistry {
         querier: Address,
         target_contract: Address,
     ) -> Result<Vec<AlertConfig>, ContractError> {
+        querier.require_auth();
         Self::assert_watcher_if_configured(&env, &querier)?;
         let ids = Self::contract_index(&env, &target_contract);
         Ok(Self::active_configs_for_ids(&env, &ids))
@@ -2569,6 +2571,7 @@ impl AlertRegistry {
         querier: Address,
         owner: Address,
     ) -> Result<Vec<AlertConfig>, ContractError> {
+        querier.require_auth();
         Self::assert_watcher_if_configured(&env, &querier)?;
         let ids = Self::owner_index(&env, &owner);
         Ok(Self::configs_for_ids(&env, &ids))
@@ -2631,6 +2634,7 @@ impl AlertRegistry {
         querier: Address,
         ids: Vec<u64>,
     ) -> Result<Vec<AlertConfig>, ContractError> {
+        querier.require_auth();
         Self::assert_watcher_if_configured(&env, &querier)?;
         Ok(Self::configs_for_ids(&env, &ids))
     }
@@ -2649,6 +2653,7 @@ impl AlertRegistry {
         offset: u32,
         limit: u32,
     ) -> Result<Vec<AlertConfig>, ContractError> {
+        querier.require_auth();
         Self::assert_watcher_if_configured(&env, &querier)?;
         let ids = Self::contract_index(&env, &target_contract);
         Ok(Self::configs_paginated(&env, &ids, offset, limit))
@@ -2693,6 +2698,7 @@ impl AlertRegistry {
         offset: u32,
         limit: u32,
     ) -> Result<Vec<AlertConfig>, ContractError> {
+        querier.require_auth();
         Self::assert_watcher_if_configured(&env, &querier)?;
         let ids = Self::contract_index(&env, &target_contract);
         Ok(Self::active_configs_paginated(&env, &ids, offset, limit))
@@ -2712,6 +2718,7 @@ impl AlertRegistry {
         offset: u32,
         limit: u32,
     ) -> Result<Vec<AlertConfig>, ContractError> {
+        querier.require_auth();
         Self::assert_watcher_if_configured(&env, &querier)?;
         let ids = Self::owner_index(&env, &owner);
         Ok(Self::configs_paginated(&env, &ids, offset, limit))
@@ -2731,6 +2738,7 @@ impl AlertRegistry {
         querier: Address,
         config_id: u64,
     ) -> Result<Option<AlertConfig>, ContractError> {
+        querier.require_auth();
         Self::assert_watcher_if_configured(&env, &querier)?;
         Ok(env.storage().persistent().get(&DataKey::Alert(config_id)))
     }
@@ -2749,6 +2757,7 @@ impl AlertRegistry {
         querier: Address,
         config_id: u64,
     ) -> Result<Option<bool>, ContractError> {
+        querier.require_auth();
         Self::assert_watcher_if_configured(&env, &querier)?;
         Ok(env
             .storage()
@@ -2777,6 +2786,7 @@ impl AlertRegistry {
         querier: Address,
         config_id: u64,
     ) -> Result<Option<Address>, ContractError> {
+        querier.require_auth();
         Self::assert_watcher_if_configured(&env, &querier)?;
         Ok(env
             .storage()
@@ -2995,44 +3005,16 @@ impl AlertRegistry {
     /// one call. Callers that need every alert should page repeatedly,
     /// advancing `offset` by `limit` until it reaches `get_alert_count()`;
     /// a short or empty result page does not indicate that the scan is complete.
-    #[must_use]
     pub fn get_alerts_modified_since(
         env: Env,
+        querier: Address,
         since: u64,
         offset: u32,
         limit: u32,
-    ) -> Vec<AlertConfig> {
-        let total: u64 = env
-            .storage()
-            .instance()
-            .get(&instance_key::NEXT_ID)
-            .unwrap_or(0u64);
-
-        let range_start = u64::from(offset).min(total);
-        let range_end = u64::from(offset)
-            .saturating_add(u64::from(limit.min(MAX_PAGE_SIZE)))
-            .min(total);
-
-        let mut out: Vec<AlertConfig> = vec![&env];
-        for id in range_start..range_end {
-            if let Some(cfg) = env
-                .storage()
-                .persistent()
-                .get::<DataKey, AlertConfig>(&DataKey::Alert(id))
-                .or_else(|| {
-                    env.storage()
-                        .persistent()
-                        .get::<DataKey, AlertConfig>(&DataKey::RemovedAlert(id))
-                })
-            {
-                if cfg.updated_at >= since {
-                    out.push_back(cfg);
-                }
-            }
-        }
-        out
-    pub fn get_alerts_modified_since(env: Env, since: u64, offset: u32, limit: u32) -> Vec<AlertConfig> {
-        Self::scan_alerts_modified(&env, offset, limit, |cfg| cfg.updated_at >= since)
+    ) -> Result<Vec<AlertConfig>, ContractError> {
+        querier.require_auth();
+        Self::assert_watcher_if_configured(&env, &querier)?;
+        Ok(Self::scan_alerts_modified(&env, offset, limit, |cfg| cfg.updated_at >= since))
     }
 
     /// Return all alert configs whose `updated_ledger` sequence number is greater
@@ -3074,14 +3056,16 @@ impl AlertRegistry {
     /// `limit` (see [`AlertRegistry::get_global_alert_limit`] for an admin-settable ceiling
     /// on total registry size) rather than requesting the whole ID space in
     /// one call.
-    #[must_use]
     pub fn get_alerts_modified_since_ledger(
         env: Env,
+        querier: Address,
         since_ledger: u32,
         offset: u32,
         limit: u32,
-    ) -> Vec<AlertConfig> {
-        Self::scan_alerts_modified(&env, offset, limit, |cfg| cfg.updated_ledger >= since_ledger)
+    ) -> Result<Vec<AlertConfig>, ContractError> {
+        querier.require_auth();
+        Self::assert_watcher_if_configured(&env, &querier)?;
+        Ok(Self::scan_alerts_modified(&env, offset, limit, |cfg| cfg.updated_ledger >= since_ledger))
     }
 
     /// Return the oldest ledger sequence from which incremental sync is
