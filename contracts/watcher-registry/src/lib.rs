@@ -16,7 +16,7 @@ use soroban_sdk::{
 };
 
 contractmeta!(key = "Name", val = "WatcherRegistry");
-contractmeta!(key = "Version", val = "0.1.0");
+contractmeta!(key = "Version", val = "0.3.0-rc.1");
 
 // ── Errors ────────────────────────────────────────────────────────────────────
 
@@ -81,10 +81,11 @@ pub const ADMIN_TRANSFER_EXPIRY_LEDGERS: u32 = 120_960;
 
 /// Maximum number of watchers the registry will hold.
 ///
-/// Every mutation loads, scans and rewrites the whole `Vec<Address>` under a
-/// single instance-storage key, so the set must stay small enough for those
-/// O(n) operations to fit comfortably in a transaction's resource budget.
-pub const MAX_WATCHERS: u32 = 100;
+/// Increased from 100 to 250 based on Soroban SDK gas improvements and to support
+/// larger monitoring networks. Every mutation loads, scans and rewrites the whole
+/// `Vec<Address>` under a single instance-storage key, so the set must stay small
+/// enough for those O(n) operations to fit comfortably in a transaction's resource budget.
+pub const MAX_WATCHERS: u32 = 250;
 
 /// Maximum number of admins the registry will hold. Bounded for the same
 /// reason as [`MAX_WATCHERS`], and kept much smaller since the admin set is

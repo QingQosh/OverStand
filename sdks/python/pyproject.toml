@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "overstand"
+version = "0.3.0rc1"
+description = "Python SDK for OverStand Soroban alert and watcher registry contracts"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "QingQosh", email = "qingqosh@stellar.org"}
+]
+keywords = ["soroban", "stellar", "alert", "monitoring", "sdk"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Office/Business :: Financial",
+]
+
+dependencies = [
+    "stellar-sdk>=21.0.0,<22.0.0",
+    "pydantic>=2.0.0",
+    "typing-extensions>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "black>=23.0.0",
+    "isort>=5.0.0",
+    "flake8>=6.0.0",
+    "types-requests>=2.28.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/QingQosh/OverStand"
+Repository = "https://github.com/QingQosh/OverStand.git"
+Documentation = "https://github.com/QingQosh/OverStand#readme"
+Changelog = "https://github.com/QingQosh/OverStand/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+packages = ["overstand_py"]
+
+[tool.setuptools.package-data]
+overstand_py = ["py.typed"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--cov=overstand_py --cov-report=term-per-module"

@@ -16,7 +16,7 @@ use soroban_sdk::{
 };
 
 contractmeta!(key = "Name", val = "AlertRegistry");
-contractmeta!(key = "Version", val = "0.2.1");
+contractmeta!(key = "Version", val = "0.3.0-rc.1");
 
 // ── Storage keys ────────────────────────────────────────────────────────────
 
@@ -99,12 +99,14 @@ pub const VALID_RULE_DESCRIPTORS: [&str; 5] = [
     "rule:clawback",
 ];
 
-/// Maximum number of rule descriptors per alert, derived from [`VALID_RULE_DESCRIPTORS`].
+/// Maximum number of rule descriptors per alert.
 ///
+/// Increased from the current count of [`VALID_RULE_DESCRIPTORS`] (5) to 10 to support
+/// more complex monitoring scenarios. Although only 5 rule types are currently recognized,
+/// the limit is set at 10 to provide headroom for future rule types without contract upgrades.
 /// Because [`AlertRegistry::validate_rules`] rejects both unrecognized descriptors and
-/// duplicate descriptors, no valid rule list can contain more entries than the number
-/// of distinct recognized descriptors.
-pub const MAX_RULES_PER_ALERT: u32 = VALID_RULE_DESCRIPTORS.len() as u32;
+/// duplicate descriptors, runtime validation ensures only recognized rules are accepted.
+pub const MAX_RULES_PER_ALERT: u32 = 10;
 
 /// Storage key variants used to address persistent and instance entries.
 #[contracttype]

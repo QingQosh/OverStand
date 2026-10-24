@@ -118,6 +118,36 @@ tagged. Until the first tagged release, generate them locally:
 make bindings-alert
 ```
 
+## Hard Limits
+
+The OverStand contracts enforce fixed and configurable capacity limits to ensure safe operation within Soroban's gas and storage constraints:
+
+### AlertRegistry
+
+| Limit | Value | Type | Notes |
+|---|---|---|---|
+| **Max rules per alert** | 10 | Fixed | The registry accepts up to 10 rule descriptors per alert. Currently 5 rule types are supported (`transfer`, `mint`, `burn`, `approve`, `clawback`); the limit provides headroom for future extensibility. |
+| **Max page size** | 100 | Fixed | Paginated queries (`get_contract_alerts_paginated`, `get_alerts_by_owner_paginated`, etc.) limit results to 100 entries per page to stay within read gas budgets. |
+| **Max alert label length** | 128 bytes | Fixed | Human-readable alert labels are capped at 128 bytes to bound storage. |
+| **Per-owner alert ceiling** | Configurable | Admin-set | Admins can cap the number of active alerts any single owner can register (default: unlimited, set to 0). Call `set_per_owner_alert_limit(admin, limit)` to enforce; useful for spam prevention. |
+| **Per-contract alert ceiling** | Configurable | Admin-set | Admins can cap the number of active alerts that may target any single contract (default: unlimited). Call `set_per_contract_alert_limit(admin, limit)`. |
+| **Global alert ceiling** | Configurable | Admin-set | Admins can cap the total number of live (non-removed) alerts registry-wide (default: unlimited). Call `set_global_alert_limit(admin, limit)`. |
+
+### WatcherRegistry
+
+| Limit | Value | Type | Notes |
+|---|---|---|---|
+| **Max watchers** | 250 | Fixed | The registry holds up to 250 authorized watcher node addresses. Each mutation (add/remove) scans the full list, so the set is kept small enough for O(n) operations to fit in a transaction's budget. |
+| **Max admins** | 10 | Fixed | The admin set is an operational structure, kept much smaller than watchers. |
+| **Max timelock delay** | 518,400 ledgers (~30 days) | Fixed | Prevents governance deadlock from ultra-long delays. |
+| **Min watchers** | 1 | Fixed | At least one watcher must remain registered to prevent accidental network halt. |
+
+### Pagination
+
+All paginated read endpoints accept an `offset` and `limit` parameter. The `limit` is capped at 100; requests exceeding this are rejected with `LimitTooLarge`.
+
+See [docs/compatibility.md](docs/compatibility.md) for a complete capacity and gas profile.
+
 ## Architecture
 
 ```mermaid
@@ -822,6 +852,7 @@ See [DEPLOYMENTS.md](DEPLOYMENTS.md).
 
 - [Alert Registry function reference](docs/alert-registry.md)
 - [Watcher Registry function reference](docs/watcher-registry.md)
+- [Rule Descriptors Specification](docs/rules-specification.md)
 - [Upgrade guide](docs/upgrade-guide.md)
 - [Compatibility Matrix](docs/compatibility.md)
 - [Ecosystem submission guide](docs/ecosystem-submission.md)
