@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-10-24
+
+### Added
+
+- **Go SDK** (`sdks/go`): Full-featured Go bindings and client library for OverStand contracts
+  - Type-safe Go interfaces wrapping AlertRegistry and WatcherRegistry
+  - CLI tool (`overstand-cli`) for common operations
+  - Examples for registering and querying alerts
+  - Published to pkg.go.dev
+  
+- **Governance Framework** (`docs/governance.md`): Community-driven decision-making process
+  - RFC (Request for Comments) process for major features, rule descriptors, and breaking changes
+  - Governance Council structure and voting rules
+  - 28-day standard timeline, 7-day expedited timeline for security issues
+  - `.github/GOVERNANCE.md` link from repository root
+  - Updated `CONTRIBUTING.md` with governance references
+  
+- **RFC Template** (`docs/rfc-template.md`): Structured proposal template for community submissions
+  - Comprehensive sections for problem statement, solution, alternatives, and implementation
+  - Success metrics and risk analysis
+  - Code examples and implementation timeline
+  
+- **Operations Runbook** (`docs/operations.md`): Complete guide for running OverStand mainnet
+  - Daily, weekly, and monthly health check procedures
+  - Anomaly detection rules (alert spike, watcher churn, query latency, webhook failures)
+  - Incident response templates and escalation procedures
+  - Post-incident review process
+  - Monitoring setup with Prometheus queries and Grafana dashboard templates
+  
+- **Webhook Security Best Practices** (`docs/webhook-security.md`): Comprehensive security guide for integrators
+  - HMAC-SHA256 signature validation (v0.4.0 feature)
+  - Source IP whitelisting, rate limiting, input validation
+  - Complete Python (Flask) and Go (Chi) example implementations
+  - Docker Compose setup for local testing
+  - Security checklist for production deployments
+
+### Changed
+
+- **Hard Limits Increased** (from v0.2.1)
+  - Max rules per alert: 10 (unchanged, but confirmed for future expansion)
+  - Max watchers: 250 (increased from 50)
+  - Max per-owner alerts: 10 (configurable by admin)
+  - Max per-contract alerts: 10 (configurable by admin)
+
+### Documentation
+
+- Rule semantics fully documented in `docs/rules-specification.md`
+- Storage layout, TTL management, and threat models documented
+- Deployment and upgrade guides updated
+- Events and error codes documented
+
+### Release Notes
+
+**OverStand v0.3.0: Global Recognition as Stellar's Alert Standard**
+
+This release establishes OverStand as the go-to solution for on-chain alerts on Stellar with:
+
+1. **Ecosystem SDKs**: TypeScript (v0.2.1+), Python, and now **Go** SDKs
+2. **Community Governance**: RFC process for transparent decision-making
+3. **Operational Excellence**: Runbook and monitoring guidance for mainnet operators
+4. **Security Hardening**: Webhook best practices and HMAC signing preparation
+5. **Comprehensive Documentation**: Governance, operations, security, and rules all documented
+
 ## [0.2.1] - 2025-10-23
 
 ### Breaking Changes (Security)

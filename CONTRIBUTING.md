@@ -1,5 +1,20 @@
 # Contributing
 
+## Governance & Proposals
+
+OverStand uses a structured RFC (Request for Comments) process for major decisions. Before proposing new features, rule descriptors, hard limit changes, or breaking changes, please review our governance framework:
+
+- **[Governance Framework](docs/governance.md)** - Decision process, timeline, and council structure
+- **[RFC Template](docs/rfc-template.md)** - Template for submitting proposals
+
+Major decisions that require community input:
+- New rule descriptors (e.g., `rule:liquidity-pool`)
+- Hard limit changes (e.g., max rules per alert)
+- Breaking contract upgrades
+- Deprecation timelines
+
+See [docs/governance.md](docs/governance.md) for the full process.
+
 ## Prerequisites
 
 Install the Rust toolchain and Soroban target:

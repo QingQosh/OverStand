@@ -16,7 +16,7 @@ use soroban_sdk::{
 };
 
 contractmeta!(key = "Name", val = "AlertRegistry");
-contractmeta!(key = "Version", val = "0.3.0-rc.1");
+contractmeta!(key = "Version", val = "0.3.0");
 
 // ── Storage keys ────────────────────────────────────────────────────────────
 

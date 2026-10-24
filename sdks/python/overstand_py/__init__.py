@@ -36,7 +36,7 @@ from .alert_registry import AlertRegistry
 from .watcher_registry import WatcherRegistry
 from .types import AlertConfig, Rule
 
-__version__ = "0.3.0rc1"
+__version__ = "0.3.0"
 __author__ = "QingQosh"
 
 __all__ = [

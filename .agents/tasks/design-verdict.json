@@ -1,0 +1,84 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "severity": "HIGH",
+      "section": "Tier 0 Overview — Problem Statement",
+      "finding": "Specification frames Tier 0 work as 'NEW security features' but project analysis describes them as 'vulnerabilities in EXISTING gated reads'. Contradictory framing prevents clear implementation understanding: are these bug fixes to existing functions or new features?",
+      "recommendation": "Read v0.2.0 AlertRegistry contract source. If gated read functions exist, reframe as 'Fix #197/198: Add Authentication to Existing Functions' (breaking change). If they don't exist, reframe as 'Tier 0 Addition: Implement Secure Gated Reads' (new features). Reconcile with project-analysis.md framing."
+    },
+    {
+      "severity": "HIGH",
+      "section": "Fix #197 Affected Functions Table vs. Fix #198 & Version Strategy",
+      "finding": "Fix #197 table lists 8 functions requiring `querier.require_auth()`. Fix #198 describes 2 incremental sync functions needing the same treatment. Later text claims 'all 8 affected functions' but then states '10 function signatures changed'. Function count is ambiguous (8 vs. 10).",
+      "recommendation": "Clarify: 'Fix #197 affects 8 functions (list them). Fix #198 affects 2 functions. Total: 10 functions.' Use this precise language throughout. Update all references, CLI examples, TypeScript bindings documentation, and test requirements to reflect the 10-function total."
+    },
+    {
+      "severity": "HIGH",
+      "section": "Retry and Fallback Specification (Tier 0) & HIGH-002 RuleRegistry section",
+      "finding": "Cross-contract failure handling contradicts itself. Tier 0 pseudocode shows fail-closed (reject rule if RuleRegistry call fails). But the RuleRegistry section decision table suggests fail-open might be acceptable. Additionally, behavior unclear when alert has both built-in and custom rules: does one bad custom rule block the entire registration, or only that rule?",
+      "recommendation": "Make explicit choice: Recommend OPTION A (Fail-Closed): Custom rules require RuleRegistry live; if offline, custom rule registration fails. Built-in rules always succeed (fallback). Document: 'Operators must ensure RuleRegistry availability for custom rule support.' Apply consistently in all pseudocode. Update decision table to indicate fail-closed is the chosen path."
+    },
+    {
+      "severity": "HIGH",
+      "section": "Fix #197 & #198 Pseudocode + Mainnet Deployment Plan",
+      "finding": "Watcher-gating semantics are unclear. Specification describes it as optional (`if let Some(registry)...`) but doesn't specify: (1) When should gating be enabled? (2) Can it be toggled? (3) Which reads are gated vs. ungated? Table lists 8 functions but other reads (e.g., `get_alert_removed`) are not mentioned. Missing definitive list.",
+      "recommendation": "Create Gating Matrix table: list every read function and mark [YES/NO] for whether it requires `require_auth()` and watcher check. Add to mainnet deployment checklist: 'Decision: Will WatcherRegistry be configured at mainnet launch? (YES/NO)' If YES, all watchers must authenticate. If NO, can be enabled later."
+    },
+    {
+      "severity": "HIGH",
+      "section": "Migration Strategy (Tier 0) & Testnet Migration Path subsection",
+      "finding": "Testnet migration path is sparse. Describes 2-week grace period, but doesn't specify: (1) How do alert owners know their alerts must migrate? (2) Can alerts be auto-migrated or must they be manually re-registered? (3) What happens to pending webhooks? (4) What's the communication plan? Manual re-registration is a major UX burden; no migration script or tooling provided.",
+      "recommendation": "Add detailed 'Testnet Migration Guide': (1) Pre-migration: provide `export-alerts-v0.2.0.sh` and `import-alerts-v0.3.0.sh` CLI tools. (2) Migration window: both contracts live side-by-side; document in README. (3) Watchers updated to poll v0.3.0. (4) Cutover: deprecate v0.2.0 address after 2 weeks. Clarify: can alerts be migrated via migration contract (see project analysis section 10.3), or must they be manually recreated?"
+    },
+    {
+      "severity": "HIGH",
+      "section": "HIGH-002 RuleRegistry — Approval Mechanism (v0.3.0)",
+      "finding": "RuleRegistry approval workflow has gaps: (1) What happens to unapproved rules after 30 days? Do they auto-expire? Storage budget unclear. (2) Rule updates: can owner update unapproved rules without admin approval? Unclear. (3) Versioning: 'Auto-bump MINOR if new fields added' — who detects 'new fields'? Automatic diff or manual? (4) Rule rejection: can owner re-propose same ID with new schema, or is ID blacklisted?",
+      "recommendation": "Add clarifications: (1) Garbage collection: 'Unapproved rules >30 days old are automatically pruned weekly (or on-demand).' (2) Updates: 'Owner can update any rule (approved or not). If approved, new schema requires admin re-approval. If not approved, schema replaced automatically.' (3) Versioning: 'Owner manually specifies new version in propose_rule_update(rule_id, schema, version). Contract validates: version > current_version.' (4) Rejection: 'Rejected rules remain in storage. Owner can re-propose with different schema under same ID.'"
+    },
+    {
+      "severity": "HIGH",
+      "section": "Mainnet Deployment Plan — Testnet Stress-Test Checklist",
+      "finding": "Stress test acceptance criteria are ambiguous. Definition of 'zero' errors unclear ('zero errors observed' vs. '<0.01% error rate'?). Measurement method unspecified (event logs? failed transactions? RPC errors?). Threshold enforcement unclear (who decides? automated CI or manual?). Test harness not described (which tool? how many runs? how long each test?). Example: '24h polling test' doesn't specify watchers count or polling frequency.",
+      "recommendation": "Add 'Stress Test Harness Specification': (1) Tests implemented in contracts/integration-tests/stress_tests.rs using async Rust. (2) Triggered by CI workflow on every merge to main. (3) Measurement: collect JSON results; parse against thresholds; fail workflow if any threshold missed. (4) Example test: 'Register 1000 alerts sequentially; measure success_count and error_count; success criteria: success_count == 1000 AND error_count == 0.' (5) Mainnet sign-off: 'All 10 stress tests PASS (run 3x each; pass all 3x).'"
+    },
+    {
+      "severity": "HIGH",
+      "section": "HIGH-003 Python and Go SDKs — Dependencies subsections",
+      "finding": "SDK dependencies listed without verification: Python `stellar-sdk>=12.0.0`, `httpx>=0.25.0`. Go `github.com/stellar/go/clients/horizonclient`. No tested versions specified. Compatibility with Soroban (not just classic Stellar) unclear. Go SDK needs Soroban data serialization — dependency not mentioned. Version conflict risk not addressed (no lock file strategy).",
+      "recommendation": "Create 'Dependency Matrix': list tested version ranges for each dependency (e.g., 'stellar-sdk: 12.0.0–12.5.x'). Add rationale (e.g., 'Soroban support added in 12.x'). For Go: verify horizonclient has Soroban RPC support; if not, document alternative. Add CI step: pin dependencies in requirements.txt (Python) and go.sum (Go). Weekly Dependabot checks for security updates."
+    },
+    {
+      "severity": "HIGH",
+      "section": "TypeScript Bindings Update Workflow (end of specification)",
+      "finding": "Bindings regeneration workflow incomplete. Describes auto-generation via `stellar contract bindings typescript` but doesn't explain: (1) How are hand-written files (networks.ts, error handling) maintained without conflicts? (2) Will regeneration overwrite manually maintained extensions? (3) How are versions aligned between contract and bindings? (4) Publishing pipeline not described (automated on tag? manual dispatch?).",
+      "recommendation": "Add 'TypeScript Bindings Management Workflow': (1) File structure: Keep hand-written code in separate files (networks.ts, errors.ts) that import from _generated/. (2) Regeneration: CI auto-generates on WASM changes; compare against golden file to detect ABI breakage. (3) Version alignment: bindings version always matches contract version (e.g., both 0.3.0). (4) Publishing: Automated via CI workflow on git tag; triggered by 'v0.3.0' tag → publish npm package 0.3.0."
+    },
+    {
+      "severity": "MEDIUM",
+      "section": "Mainnet Deployment Plan — Mainnet Sign-Off Checklist",
+      "finding": "Admin key custody requirement stated but implementation missing. Specification includes checklist item '- [ ] Admin key custody: SECURED and DOCUMENTED' but doesn't describe: (1) Multi-sig configuration (2-of-3? 3-of-5?)? (2) Key storage (hardware wallet? escrow?)? (3) Recovery procedure if key lost? (4) What should be documented?",
+      "recommendation": "Add 'Admin Key Management Policy' section: (1) Bootstrap: 2-of-3 multi-sig (core maintainer A + B + community DAO). (2) Key storage: Hardware wallets (Ledger/Trezor); keys never in code/CI. (3) Incident response: If key compromised, initiate 2-phase admin transfer to recovery key. (4) Documentation: Store in encrypted wiki: multi-sig details, BIP32 paths, backup recovery seed phrases (encrypted), emergency contacts, incident response procedure."
+    },
+    {
+      "severity": "MEDIUM",
+      "section": "HIGH-002 RuleRegistry — Approval Mechanism + Future Upgrades",
+      "finding": "Governance upgrade path too vague. Specification says v0.3.0 uses single-admin, but v0.4.0+ can transition to multi-sig/DAO 'out of scope'. No trigger for v0.4.0 governance upgrade defined. No migration path described for rules during contract upgrade. Leaves governance transition to ad-hoc decision.",
+      "recommendation": "Add 'RuleRegistry Governance Roadmap' section: (1) Transition trigger: When ≥20 custom rules approved OR ≥3 months after mainnet launch, initiate v0.4.0 governance upgrade. (2) v0.4.0 option: Multi-admin (3+ signers, 2-of-3 approval) recommended; DAO option deferred. (3) Migration: Deploy v0.4.0; copy rules from v0.3.0; AlertRegistry calls set_rule_registry(new_address). (4) Timeline: v0.3.0 mainnet weeks 1–4; v0.4.0 development weeks 5–12; v0.4.0 testnet weeks 13–16; v0.4.0 mainnet week 17+."
+    },
+    {
+      "severity": "MEDIUM",
+      "section": "SECTION 2 TIER 1 Overview & Scope",
+      "finding": "Tier 1 and Tier 2 features not clearly scoped. Specification defines 'Tier 1' but doesn't clarify: (1) Are these features REQUIRED or OPTIONAL for mainnet? (2) Which Tier 1 features block each other? (3) What's in Tier 2? (4) What success looks like? Roadmap prioritization unclear.",
+      "recommendation": "Add 'Upgrade Roadmap Summary' table: Tier 0 (weeks 1–4, mandatory); Tier 1a: RuleRegistry (weeks 5–12, optional); Tier 1b: Python/Go SDKs (weeks 5–12, optional); Tier 1c: Governance docs (weeks 5–8, optional); Tier 2 TBD. Sequencing: Tier 1 features are independent; can ship in parallel. Tier 2 features TBD post-Tier 1."
+    },
+    {
+      "severity": "MEDIUM",
+      "section": "Testing Strategy (HIGH-002) & CI/CD (HIGH-003)",
+      "finding": "SDK testing and CI/CD gaps. Specification mentions testing strategy for RuleRegistry and SDKs but doesn't specify: (1) Are integration tests run per-commit or nightly? (2) How are Python/Go SDKs tested against live testnet? (3) How is backwards compatibility verified across contract versions? (4) Failure handling in CI: Do failing SDK tests block PR merge?",
+      "recommendation": "Add 'SDK Testing & CI/CD Strategy' section: (1) Test levels: unit (pytest, go test, every commit) + integration (against testnet, nightly or on PR). (2) Integration env: Use stable testnet contract addresses (hardcoded in env vars). (3) Contract version matrix: Each SDK release documents compatible contract versions (e.g., 'overstand-py@0.3.0 → AlertRegistry v0.3.0'). (4) CI workflows: .github/workflows/test-python-sdk.yml and test-go-sdk.yml (unit + integration jobs)."
+    }
+  ],
+  "reviewDoc": "c:\\Users\\LENOVO PC\\Desktop\\New folder (5)\\OverStand\\.agents\\tasks\\design-review.md"
+}
